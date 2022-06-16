@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel target="1.7">
+      <module name="CryptoCompose.api" target="11" />
+      <module name="CryptoCompose.app" target="11" />
+      <module name="CryptoCompose.data" target="11" />
+      <module name="CryptoCompose.models" target="11" />
+      <module name="CryptoCompose.network" target="11" />
+      <module name="CryptoCompose.realm" target="11" />
+      <module name="CryptoCompose.repository" target="11" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">CryptoCompose</string>
+    <string name="rank_placeholder">rank: %1$d</string>
+    <string name="price_placeholder">Price: %$1s %$2d</string>
+
+    <string name="home_screen">Home</string>
+    <string name="search_screen">Search</string>
+    <string name="favorite_screen">Favorites</string>
+</resources>
