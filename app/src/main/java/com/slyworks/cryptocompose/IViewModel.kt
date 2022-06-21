@@ -1,4 +1,4 @@
-package com.slyworks.cryptocompose.ui.activities.main
+package com.slyworks.cryptocompose
 
 import com.slyworks.models.CryptoModel
 
@@ -6,7 +6,7 @@ import com.slyworks.models.CryptoModel
 /**
  *Created by Joshua Sylvanus, 4:08 AM, 16-Jun-22.
  */
-interface IMainActivityViewModel {
+interface IViewModel {
     fun setItemFavoriteStatus(entity:CryptoModel,
                               status:Boolean)
 }

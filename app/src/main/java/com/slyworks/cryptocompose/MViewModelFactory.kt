@@ -2,6 +2,7 @@ package com.slyworks.cryptocompose
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.slyworks.cryptocompose.ui.activities.details.DetailsViewModel
 import com.slyworks.cryptocompose.ui.activities.main.FavoritesViewModel
 import com.slyworks.cryptocompose.ui.activities.main.HomeViewModel
 import com.slyworks.cryptocompose.ui.activities.main.SearchViewModel
@@ -18,6 +19,8 @@ class MViewModelFactory(private var dataManager: DataManager):
                 SearchViewModel(dataManager) as T
             modelClass.isAssignableFrom(FavoritesViewModel::class.java) ->
                 FavoritesViewModel(dataManager) as T
+            modelClass.isAssignableFrom(DetailsViewModel::class.java) ->
+                DetailsViewModel(dataManager) as T
             else -> throw IllegalArgumentException("setup ViewModel Factory before instantiating")
         }
     }

@@ -3,9 +3,11 @@ package com.slyworks.cryptocompose.ui.activities.main
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.slyworks.cryptocompose.IViewModel
 import com.slyworks.data.DataManager
 import com.slyworks.models.CryptoModel
 import com.slyworks.models.Outcome
+import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -14,7 +16,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 /**
  *Created by Joshua Sylvanus, 4:04 AM, 16-Jun-22.
  */
-class FavoritesViewModel(private var dataManager:DataManager) : ViewModel(), IMainActivityViewModel {
+class FavoritesViewModel(private var dataManager:DataManager) : ViewModel(), IViewModel {
     //region Vars
     private val TAG: String? = FavoritesViewModel::class.simpleName
 
@@ -33,29 +35,29 @@ class FavoritesViewModel(private var dataManager:DataManager) : ViewModel(), IMa
        val d = dataManager.getFavorites()
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
-            .subscribe {
-                if(it.isNullOrEmpty()){
-                    _favoriteStateLiveData.postValue(Outcome.FAILURE("you currently have"+
-                            " no favorites, check the \"Favorite icon\" to add an item to favorites"))
-                }else{
-                    _favoriteStateLiveData.postValue(Outcome.SUCCESS(null))
-                    _favoriteDataListLiveData.postValue(it)
-                }
+            .doOnSuccess {
+                _favoriteStateLiveData.postValue(Outcome.SUCCESS(null))
+                _favoriteDataListLiveData.postValue(it)
             }
+           .doOnError {
+               _favoriteStateLiveData.postValue(Outcome.FAILURE("you have"+
+                       " no favorites at the moment, check the \"Favorite icon\" to add an item to favorites"))
+           }
+           .subscribe()
 
         mSubscriptions.add(d)
     }
 
-    override fun setItemFavoriteStatus(entity:CryptoModel,state:Boolean){
-        val o: Observable<Boolean> =
-            if (state)
+    override fun setItemFavoriteStatus(entity:CryptoModel, status:Boolean){
+        val o: Completable =
+            if (status)
                 dataManager.addToFavorites(entity)
             else
                 dataManager.removeFromFavorites(entity)
 
         val d  = o.observeOn(Schedulers.io())
             .subscribeOn(Schedulers.io())
-            .subscribe { _ -> }
+            .subscribe()
 
         mSubscriptions.add(d)
     }

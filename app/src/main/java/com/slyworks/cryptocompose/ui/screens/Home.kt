@@ -1,24 +1,23 @@
 package com.slyworks.cryptocompose.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.IconToggleButton
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
@@ -26,9 +25,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberImagePainter
 import coil.size.Scale
 import coil.transform.CircleCropTransformation
+import com.slyworks.cryptocompose.App
 import com.slyworks.cryptocompose.R
 import com.slyworks.cryptocompose.ui.activities.main.HomeViewModel
-import com.slyworks.cryptocompose.ui.activities.main.IMainActivityViewModel
+import com.slyworks.cryptocompose.IViewModel
+import com.slyworks.cryptocompose.ui.activities.main.MainActivity
 import com.slyworks.models.CryptoModel
 import com.slyworks.models.Outcome
 
@@ -44,30 +45,21 @@ fun HomeMain(viewModel: HomeViewModel){
     val list: State<List<CryptoModel>?> = viewModel.homeDataListLiveData.observeAsState()
     val progressState:MutableState<Boolean> = remember{ mutableStateOf(true) }
 
-    viewModel.getData()
 
-    HomeContent(state,list,progressState,viewModel)
-}
-
-@Composable
-fun HomeContent(state:State<Outcome?>,
-                dataListState:State<List<CryptoModel>?>,
-                progressState:MutableState<Boolean>,
-                viewModel: HomeViewModel){
     if(progressState.value) {
         ProgressBar()
     }
 
     when{
         state.value!!.isSuccess ->{
-            progressState.value = false
 
             LazyColumn {
-                itemsIndexed(items = dataListState.value!!) { index, item ->
+                itemsIndexed(items = list.value!!) { index, item ->
                     CardListItem(entity = item, viewModel)
-                    Spacer(modifier = Modifier.height(4.dp))
                 }
             }
+
+            progressState.value = false
         }
         state.value!!.isFailure ->{
             progressState.value = false
@@ -77,6 +69,7 @@ fun HomeContent(state:State<Outcome?>,
         state.value!!.isError -> progressState.value = true
     }
 }
+
 @Composable
 fun ProgressBar(){
     Column(
@@ -93,23 +86,15 @@ fun ProgressBar(){
 }
 
 @Composable
-@Preview
-fun ErrorComposable(text:String = ""){
+fun ErrorComposable(text:String){
     Column(
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .fillMaxHeight(0.6F)
+            .fillMaxHeight()
             .fillMaxWidth()
             .padding(16.dp)
             ) {
-
-        /*Image(
-            modifier = Modifier
-                .weight(0.8F)
-                .fillMaxWidth(),
-            imageVector = Icons.Default.Warning,
-            contentDescription = "" )*/
 
         DisplayLottieAnim(
             modifier = Modifier
@@ -118,22 +103,24 @@ fun ErrorComposable(text:String = ""){
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(text = text)
+        Text(
+            textAlign = TextAlign.Center,
+            text = text)
     }
 }
 
 @ExperimentalUnitApi
 @Composable
 fun CardListItem(entity: CryptoModel,
-                 mViewModel: IMainActivityViewModel
-){
+                 mViewModel: IViewModel,
+                 onItemClick:(CryptoModel) -> Unit = MainActivity.Companion::navigateToDetailsScreen){
     /*TODO & fixme: make this use Box or ConstraintLayout*/
-    
     Card(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxWidth()
-            .height(110.dp),
+            .height(110.dp)
+            .clickable(onClick = { onItemClick(entity) }),
         shape = RoundedCornerShape(8.dp),
         elevation = 4.dp
     ) {
@@ -145,16 +132,12 @@ fun CardListItem(entity: CryptoModel,
                 Image(
                     painter = rememberImagePainter(
                         data = entity.image.toString(),
-                        builder = {
-                            scale(Scale.FILL)
-                            placeholder(R.drawable.ic_placeholder)
-                            transformations(CircleCropTransformation())
-                        }
+                        builder = App.imageRequest
                     ),
                     contentDescription = "",
                     modifier = Modifier
                         .fillMaxHeight()
-                        .weight(0.3F))
+                        .weight(0.2F))
 
                 Spacer(
                     modifier = Modifier
@@ -167,7 +150,7 @@ fun CardListItem(entity: CryptoModel,
                     horizontalAlignment = Alignment.Start,
                     modifier = Modifier
                         .fillMaxHeight()
-                        .weight(0.65F)
+                        .weight(0.75F)
                         .padding(4.dp)) {
 
                     Row(
@@ -205,25 +188,46 @@ fun CardListItem(entity: CryptoModel,
 
                         Text(
                             modifier = Modifier
-                                .weight(0.8F)
+                                .weight(0.7F)
                                 .wrapContentHeight(align = Alignment.CenterVertically),
                             fontSize = TextUnit(16F, TextUnitType.Sp),
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            text = stringResource(id = R.string.price_placeholder, entity.priceUnit!!, entity.price!!)
+                            text = stringResource(id = R.string.price_placeholder, entity.priceUnit, entity.price)
                         )
                         
-                        IconToggleButton(
-                            modifier = Modifier
-                                .weight(0.2F)
-                                .wrapContentHeight(align = Alignment.CenterVertically),
-                            checked = entity.isFavorite,
-                            onCheckedChange = { mViewModel.setItemFavoriteStatus(entity, it) },
-                            ) {
-                               Icons.Default.Favorite
-                            }
+                        FavoriteIconButton(modifier = Modifier.weight(0.3F)
+                                                              .height(30.dp)
+                                                              .align(Alignment.CenterVertically),
+                                           entity = entity,
+                                           viewModel = mViewModel)
                     }
                 }
             }
+    }
+}
+
+@Composable
+fun FavoriteIconButton(modifier:Modifier,
+                       entity:CryptoModel,
+                       viewModel: IViewModel){
+    var isChecked:Boolean by remember { mutableStateOf(entity.isFavorite) }
+
+    IconToggleButton(
+        modifier = modifier,
+        checked = isChecked,
+        onCheckedChange = {
+            isChecked = it
+            viewModel.setItemFavoriteStatus(entity, it)
+        },
+    ) {
+        Icon(
+            imageVector =
+            if(isChecked)
+                Icons.Default.Favorite
+            else
+                Icons.Default.FavoriteBorder,
+            contentDescription = null,
+            tint = Color.Magenta )
     }
 }

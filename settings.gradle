@@ -4,9 +4,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         jcenter()
-      /*  maven {
-            url "https://oss.sonatype.org/content/repositories/snapshots/"
-        }*/
+
     }
 }
 rootProject.name = "CryptoCompose"

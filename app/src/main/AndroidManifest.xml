@@ -2,9 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.slyworks.cryptocompose">
 
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.INTERNET" />
-
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -18,7 +15,6 @@
             android:name=".ui.activities.splash.SplashActivity"
             android:exported="true"
             android:label="@string/app_name">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -30,9 +26,16 @@
             android:name=".ui.activities.main.MainActivity"
             android:exported="false"
             android:label="@string/app_name"
-            android:theme="@style/Theme.CryptoCompose.NoActionBar"/>
+            android:theme="@style/AppTheme.CryptoCompose.NoActionBar" />
+
+        <activity android:name=".ui.activities.details.DetailsActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.CryptoCompose.NoActionBar"/>
 
     </application>
+    <uses-permission android:name="android.permission.INTERNET" />
 
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
 </manifest>

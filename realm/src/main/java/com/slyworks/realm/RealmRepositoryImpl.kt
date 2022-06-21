@@ -3,7 +3,9 @@ package com.slyworks.realm
 import android.util.Log
 import com.slyworks.models.CryptoModel
 import com.slyworks.repository.RealmRepository
+import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.Single
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.Sort
@@ -58,8 +60,8 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
         }
     }
 
-    override fun getData(): Observable<List<CryptoModel>> {
-       return Observable.create{ emitter ->
+    override fun getData(): Single<List<CryptoModel>> {
+       return Single.create{ emitter ->
            Realm.getInstance(config)
                .executeTransaction(Realm.Transaction {
                val l:List<CryptoModel> = it.where(CryptoModelRealm::class.java)
@@ -67,14 +69,13 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                    .sort("cmcRank", Sort.ASCENDING)
                    .map(::mapRealmModelToModel)
 
-               emitter.onNext(l)
-               emitter.onComplete()
+               emitter.onSuccess(l)
            })
        }
     }
 
-    override fun saveData(data: List<CryptoModel>):Observable<Boolean> {
-        return Observable.create { emitter ->
+    override fun saveData(data: List<CryptoModel>): Completable {
+        return Completable.create { emitter ->
             try {
                 val l: List<CryptoModelRealm> =
                     data.toMutableList()
@@ -84,19 +85,17 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                     .executeTransaction(Realm.Transaction {
                     it.insertOrUpdate(l)
 
-                    emitter.onNext(true)
+                    emitter.onComplete()
                 })
             } catch (e: Exception) {
                 Log.e(TAG, "saveData: error occurred", e)
-                emitter.onNext(false)
-            } finally {
-                emitter.onComplete()
+                emitter.onError(e)
             }
         }
     }
 
-    override fun getFavorites(): Observable<List<CryptoModel>> {
-        return Observable.create { emitter ->
+    override fun getFavorites(): Single<List<CryptoModel>> {
+        return Single.create { emitter ->
             Realm.getInstance(config)
                 .executeTransaction(Realm.Transaction {
                 val l:List<CryptoModel> = it.where(CryptoModelRealm::class.java)
@@ -105,14 +104,13 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                     .sort("name", Sort.ASCENDING)
                     .map(::mapRealmModelToModel)
 
-                emitter.onNext(l)
-                emitter.onComplete()
+                emitter.onSuccess(l)
             })
         }
     }
 
-    override fun addToFavorites(vararg data: CryptoModel): Observable<Boolean> {
-        return Observable.create { emitter ->
+    override fun addToFavorites(vararg data: CryptoModel): Completable {
+        return Completable.create { emitter ->
 
             try {
                 val l: List<CryptoModelRealm> =
@@ -129,19 +127,17 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                             }
                     }
 
-                    emitter.onNext(true)
+                    emitter.onComplete()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "addToFavorites: error occurred", e)
-                emitter.onNext(false)
-            } finally {
-                emitter.onComplete()
+                emitter.onError(e)
             }
         }
     }
 
-    override fun removeFromFavorites(vararg data: CryptoModel): Observable<Boolean> {
-        return Observable.create { emitter ->
+    override fun removeFromFavorites(vararg data: CryptoModel): Completable {
+        return Completable.create { emitter ->
             try {
                 val l: List<CryptoModelRealm> = data.toList().map(::mapModelToRealmModel)
 
@@ -156,13 +152,11 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                             }
                     }
 
-                    emitter.onNext(true)
+                    emitter.onComplete()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "removeFromFavorites: error occurred", e)
-                emitter.onNext(false)
-            } finally {
-                emitter.onComplete()
+                emitter.onError(e)
             }
         }
     }

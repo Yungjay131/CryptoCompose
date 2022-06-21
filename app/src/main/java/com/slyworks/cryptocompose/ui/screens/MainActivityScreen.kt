@@ -37,3 +37,4 @@ sealed class MainActivityScreen(val route:String,
         R.string.favorite_screen,
         R.drawable.ic_favorite )
 }
+

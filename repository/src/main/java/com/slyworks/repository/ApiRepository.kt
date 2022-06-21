@@ -1,9 +1,9 @@
 package com.slyworks.repository
 
-import com.slyworks.models.CryptoInfoRequest
-import com.slyworks.models.CryptoModel
+import com.slyworks.models.CryptoModelDetails
 import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.Single
 
 interface ApiRepository : Repository {
-    fun getSpecificCryptocurrency(body: CryptoInfoRequest): Observable<List<CryptoModel>>
+    fun getSpecificCryptocurrency(query:String): Single<CryptoModelDetails>
 }

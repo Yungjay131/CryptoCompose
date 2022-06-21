@@ -30,4 +30,8 @@
         <item name="android:statusBarColor">@color/white</item>
         <item name="android:windowTranslucentStatus">false</item>
     </style>
+
+    <style name="AppTheme.CryptoCompose.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="AppTheme.CryptoCompose.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 </resources>

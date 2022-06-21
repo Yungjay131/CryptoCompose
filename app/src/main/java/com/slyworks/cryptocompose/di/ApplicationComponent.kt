@@ -16,7 +16,7 @@ import io.realm.RealmConfiguration
  */
 
 @Component(
-    /*a list of types used as components dependencies*/
+    /*a list of types used as component's dependencies*/
     //dependencies = [ NetworkConf::class ],
     modules = [
         ApplicationModule::class,

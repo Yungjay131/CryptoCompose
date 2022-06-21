@@ -27,8 +27,6 @@ fun FavoriteMain(viewModel: FavoritesViewModel){
     val list: State<List<CryptoModel>?> = viewModel.favoriteDataListLiveData.observeAsState()
     val progressState: MutableState<Boolean> = remember{ mutableStateOf(true) }
 
-    viewModel.getFavorites()
-
     if(progressState.value){
        ProgressBar()
     }

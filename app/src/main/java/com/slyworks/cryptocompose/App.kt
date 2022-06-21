@@ -2,6 +2,15 @@ package com.slyworks.cryptocompose
 
 import android.app.Application
 import android.content.Context
+import android.graphics.Bitmap
+import coil.Coil
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.memory.MemoryCache
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import coil.size.Scale
+import coil.transform.CircleCropTransformation
 import com.slyworks.cryptocompose.di.ApplicationComponent
 import com.slyworks.cryptocompose.di.DaggerApplicationComponent
 import com.slyworks.models.Conf
@@ -16,10 +25,27 @@ import io.realm.RealmConfiguration
 val Context.appComp: ApplicationComponent
 get() = (applicationContext as App).appComponent
 
-class App : Application() {
+class App : Application(), ImageLoaderFactory{
 
     lateinit var appComponent: ApplicationComponent
 
+    companion object{
+        val imageRequest:ImageRequest.Builder.() -> Unit = {
+            memoryCachePolicy(CachePolicy.ENABLED)
+            diskCachePolicy(CachePolicy.ENABLED)
+            scale(Scale.FILL)
+            placeholder(R.drawable.ic_placeholder)
+            transformations(CircleCropTransformation())
+        }
+    }
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .crossfade(true)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .build()
+    }
 
     override fun onCreate() {
         super.onCreate()

@@ -1,8 +1,10 @@
 package com.slyworks.cryptocompose.ui.screens
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -27,29 +29,31 @@ import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.rememberLottieComposition
+import coil.compose.rememberImagePainter
+import coil.size.Scale
+import coil.transform.CircleCropTransformation
+import com.airbnb.lottie.compose.*
 import com.slyworks.cryptocompose.R
 import com.slyworks.cryptocompose.ui.activities.main.SearchViewModel
 import com.slyworks.models.CryptoModel
+import com.slyworks.models.CryptoModelDetails
 import com.slyworks.models.Outcome
+import java.util.regex.Pattern
 
 
 /**
  *Created by Joshua Sylvanus, 1:29 AM, 13-Jun-22.
  */
 
+fun check(query:String):Boolean = !Pattern.matches("[0-9.,]", query)
+
 @ExperimentalComposeUiApi
 @ExperimentalUnitApi
 @Composable
 fun SearchMain(viewModel: SearchViewModel){
     val state:State<Outcome?> = viewModel.searchStateLiveData.observeAsState()
-    val list:State<List<CryptoModel>?> = viewModel.searchDataListLiveData.observeAsState()
+    val list:State<CryptoModelDetails?> = viewModel.searchDataListLiveData.observeAsState()
     val progressState:MutableState<Boolean> = remember{ mutableStateOf(true) }
-
-    viewModel.search()
-
 
         Column {
             SearchViewComposable(
@@ -65,19 +69,26 @@ fun SearchMain(viewModel: SearchViewModel){
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if(progressState.value){
+            if(progressState.value)
                 ProgressBar()
-            }
 
             when{
                state.value!!.isSuccess ->{
                    progressState.value = false
 
-                   LazyColumn {
-                       itemsIndexed(items = list.value!!) { index, item ->
-                           CardListItem(entity = item, viewModel)
-                           Spacer(modifier = Modifier.height(4.dp))
-                       }
+                   Column {
+                       Image(
+                           painter = rememberImagePainter(
+                               data = list.value!!.logo.toString(),
+                               builder = {
+                                   scale(Scale.FILL)
+                                   placeholder(R.drawable.ic_placeholder)
+                                   transformations(CircleCropTransformation())
+                               }
+                           ),
+                           contentDescription = "",
+                           modifier = Modifier
+                               .size(80.dp))
                    }
                }
                 state.value!!.isFailure ->{
@@ -113,6 +124,7 @@ fun SearchViewComposable(onSearchTextChanged:(String) -> Unit,
     OutlinedTextField(
         modifier = Modifier
             .fillMaxWidth()
+            .height(55.dp)
             .padding(vertical = 2.dp)
             .onFocusChanged { focusState ->
                 showClearButton = focusState.isFocused
@@ -120,9 +132,12 @@ fun SearchViewComposable(onSearchTextChanged:(String) -> Unit,
             .focusRequester(focusRequester),
         value = state,
         onValueChange ={
-          state = it
+           state = it
 
-           onSearchTextChanged(it)
+            if(!check(it))
+                return@OutlinedTextField
+
+           onSearchTextChanged(it.trim())
         },
         placeholder = {
             Text(text = placeHolderText)
@@ -183,7 +198,9 @@ fun DisplayLottieAnim(modifier: Modifier){
     val animationSpec by rememberLottieComposition(spec = LottieCompositionSpec.RawRes(R.raw.not_found))
     LottieAnimation(
         modifier = modifier,
-        composition = animationSpec)
+        composition = animationSpec,
+        iterations = 100,
+    )
 }
 
 @ExperimentalUnitApi

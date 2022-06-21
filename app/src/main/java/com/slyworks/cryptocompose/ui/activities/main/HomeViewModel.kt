@@ -4,9 +4,11 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.slyworks.cryptocompose.IViewModel
 import com.slyworks.data.DataManager
 import com.slyworks.models.CryptoModel
 import com.slyworks.models.Outcome
+import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -15,7 +17,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 /**
  *Created by Joshua Sylvanus, 2:35 PM, 01-Jun-22.
  */
-class HomeViewModel(private var dataManager: DataManager) : ViewModel(), IMainActivityViewModel {
+class HomeViewModel(private var dataManager: DataManager) : ViewModel(), IViewModel {
     //region Vars
     private val TAG: String? = HomeViewModel::class.simpleName
 
@@ -38,7 +40,7 @@ class HomeViewModel(private var dataManager: DataManager) : ViewModel(), IMainAc
             .subscribe(
                 {
                     if(it.isNullOrEmpty()){
-                        _homeStateLiveData.postValue(Outcome.FAILURE("you currently are not"+
+                        _homeStateLiveData.postValue(Outcome.FAILURE("you are currently not"+
                         " connected to the internet and have no data saved offline"))
                     }else{
                         _homeStateLiveData.postValue(Outcome.SUCCESS(null))
@@ -55,16 +57,16 @@ class HomeViewModel(private var dataManager: DataManager) : ViewModel(), IMainAc
     }
 
 
-    override fun setItemFavoriteStatus(entity:CryptoModel, state:Boolean){
-        val o: Observable<Boolean> =
-            if (state)
+    override fun setItemFavoriteStatus(entity:CryptoModel, status:Boolean){
+        val o: Completable =
+            if (status)
                 dataManager.addToFavorites(entity)
             else
                 dataManager.removeFromFavorites(entity)
 
         val d  = o.observeOn(Schedulers.io())
-            .subscribeOn(Schedulers.io())
-            .subscribe { _ -> }
+                  .subscribeOn(Schedulers.io())
+                  .subscribe()
 
         mSubscriptions.add(d)
     }

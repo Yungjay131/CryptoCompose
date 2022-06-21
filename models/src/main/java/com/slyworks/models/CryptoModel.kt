@@ -1,5 +1,9 @@
 package com.slyworks.models
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
 data class CryptoModel(
     var id:String,
     val _id: Int,
@@ -17,4 +21,4 @@ data class CryptoModel(
     val dateAdded: String,
     val tags:String,//this would be a , separated string
     val isFavorite:Boolean = false
-)
+) : Parcelable

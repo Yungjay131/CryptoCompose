@@ -1,0 +1,4 @@
+ext {
+    compile_sdk_Version = 32
+    target_sdk_Version = 32
+}
