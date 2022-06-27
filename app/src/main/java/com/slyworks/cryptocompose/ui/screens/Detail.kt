@@ -1,40 +1,31 @@
 package com.slyworks.cryptocompose.ui.screens
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.rememberScrollableState
-import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material.IconToggleButton
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.MeasurePolicy
 import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import coil.compose.ImagePainter
 import coil.compose.rememberImagePainter
-import coil.request.CachePolicy
-import coil.size.Scale
-import coil.transform.CircleCropTransformation
 import com.slyworks.cryptocompose.App
 import com.slyworks.cryptocompose.IViewModel
 import com.slyworks.cryptocompose.R
-import com.slyworks.cryptocompose.ui.activities.main.MainActivity
+import com.slyworks.cryptocompose.ui.activities.details.DetailsActivityViewModel
 import com.slyworks.models.CryptoModel
+import com.slyworks.models.CryptoModelCombo
+import com.slyworks.models.Outcome
 
 
 /**
@@ -44,44 +35,145 @@ import com.slyworks.models.CryptoModel
 private fun String.parseTags():List<String> = this.split(",")
 
 @Composable
-fun DetailMain(entity:CryptoModel,
-               viewModel: IViewModel
-){
+fun DetailMain(viewModel: IViewModel){
+    val vModel = (viewModel as DetailsActivityViewModel)
 
-    LazyColumn(
+    val state: State<Outcome?> = vModel.detailsStateLiveData.observeAsState(Outcome.ERROR(null))
+    val message: State<String?> = vModel.detailsMessageLiveData.observeAsState()
+    val data:State<CryptoModelCombo?> = vModel.detailsDataLiveData.observeAsState()
+
+    val scrollState = rememberScrollState()
+   Column(
         verticalArrangement = Arrangement.SpaceAround,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
     ) {
        /*TODO:show favorite icon on CollapsingToolBarLayout*/
-        item{
-            Image(
-                painter = rememberImagePainter(
-                    data = entity.image as String,
-                    builder = App.imageRequest,
-                ),
-                contentDescription = "cryptocurrency's logo",
-                modifier = Modifier.size(80.dp)
-            )
-            TextField(label = "Name", entity.name)
-            TextField(label = "Symbol", entity.symbol)
-            TextField(label = "Cmc Rank", entity.cmcRank.toString())
-            TextField(label = "Price Unit", entity.priceUnit)
-            TextField(label = "Price", entity.price.toString())
-            TextField(label = "Max Supply", entity.maxSupply.toString())
-            TextField(label = "Circulating Supply", entity.circulatingSupply.toString())
-            TextField(label = "Total Supply", entity.totalSupply.toString())
-            TextField(label = "MarketCap", entity.marketCap.toString())
-            TextField(label = "Date Added", entity.dateAdded)
-            TagLayout(tags = entity.tags.parseTags())
-            ButtonFavorites(viewModel = viewModel, entity = entity)
-        }
+
+       when{
+           state.value!!.isSuccess ->{
+               DetailsScrollColumn(viewModel = viewModel,
+                                   entity = data.value!!)
+           }
+           state.value!!.isFailure ->{
+               when(state.value!!.getTypedValue<Int>()){
+                   0 ->{ NoInternetComposable() }
+                   1 ->{ NoResultsFoundComposable() }
+                   2 ->{ ErrorComposable2(text = state.value!!.getAdditionalInfo() as String) }
+               }
+           }
+           state.value!!.isError ->{
+               ProgressBar()
+           }
+       }
 
     }
-    
 }
 
+@Composable
+fun ErrorComposable2(text:String){
+    Column(
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxHeight()
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+
+        DisplayLottieAnim(
+            resourceId = R.raw.error,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp))
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            textAlign = TextAlign.Center,
+            text = text)
+    }
+}
+@Composable
+fun NoResultsFoundComposable(){
+    Column(
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxHeight()
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+
+        DisplayLottieAnim(
+            resourceId = R.raw.not_found_2,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp))
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            textAlign = TextAlign.Center,
+            text = "no results found")
+    }
+}
+@Composable
+fun NoInternetComposable(){
+    Column(
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxHeight()
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+
+        DisplayLottieAnim(
+            resourceId = R.raw.no_internet_1,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp))
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            textAlign = TextAlign.Center,
+            text = "internet connection unavailable")
+    }
+}
+
+@Composable
+fun DetailsScrollColumn(viewModel:IViewModel,
+                        entity:CryptoModelCombo){
+    Column() {
+        Image(
+            painter = rememberImagePainter(
+                data = entity.model!!.image as String,
+                builder = App.imageRequest,
+            ),
+            contentDescription = "cryptocurrency's logo",
+            modifier = Modifier
+                .size(80.dp)
+                .align(alignment = Alignment.CenterHorizontally)
+        )
+        TextField(label = "Name", entity.model!!.name)
+        TextField(label = "Description", entity.details!!.description)
+        TextField(label = "Symbol", entity.model!!.symbol)
+        TextField(label = "Cmc Rank", entity.model!!.cmcRank.toString())
+        TextField(label = "Price Unit", entity.model!!.priceUnit)
+        TextField(label = "Price", entity.model!!.price.toString())
+        TextField(label = "Max Supply", entity.model!!.maxSupply.toString())
+        TextField(label = "Circulating Supply", entity.model!!.circulatingSupply.toString())
+        TextField(label = "Total Supply", entity.model!!.totalSupply.toString())
+        TextField(label = "MarketCap", entity.model!!.marketCap.toString())
+        TextField(label = "Date Added", entity.model!!.dateAdded)
+        TagLayout(tags = entity.model!!.tags.parseTags())
+        ButtonFavorites(viewModel = viewModel, entity = entity.model!!)
+    }
+}
 @Composable
 fun ButtonFavorites(viewModel: IViewModel,
                     entity: CryptoModel){
@@ -92,7 +184,7 @@ fun ButtonFavorites(viewModel: IViewModel,
             .padding(6.dp),
         checked = entity.isFavorite,
         onCheckedChange = {
-            viewModel.setItemFavoriteStatus(entity = entity, status = it)
+            viewModel.setItemFavoriteStatus(entity = entity._id, status = it)
         }) {
         Icon(
             tint = Color.Magenta,

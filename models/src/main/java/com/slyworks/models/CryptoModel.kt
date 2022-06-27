@@ -5,7 +5,6 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class CryptoModel(
-    var id:String,
     val _id: Int,
     val image:String,
     val symbol:String,

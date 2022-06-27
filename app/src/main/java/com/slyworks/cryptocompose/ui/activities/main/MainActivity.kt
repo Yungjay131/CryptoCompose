@@ -1,9 +1,11 @@
 package com.slyworks.cryptocompose.ui.activities.main
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -16,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.slyworks.cryptocompose.ui.theme.CryptoComposeTheme
 import kotlinx.coroutines.launch
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -26,16 +29,17 @@ import androidx.navigation.compose.rememberNavController
 import com.slyworks.cryptocompose.EXTRA_ACTIVITY_DETAILS
 import com.slyworks.cryptocompose.appComp
 import com.slyworks.cryptocompose.ui.activities.details.DetailsActivity
-import com.slyworks.cryptocompose.ui.screens.FavoriteMain
-import com.slyworks.cryptocompose.ui.screens.HomeMain
-import com.slyworks.cryptocompose.ui.screens.MainActivityScreen
-import com.slyworks.cryptocompose.ui.screens.SearchMain
+import com.slyworks.cryptocompose.ui.screens.*
+import com.slyworks.cryptocompose.Navigator
 import com.slyworks.models.CryptoModel
 import javax.inject.Inject
 
 @ExperimentalUnitApi
 class MainActivity : ComponentActivity() {
     //region Vars
+    @Inject
+    lateinit var mainActivityViewModel: MainActivityViewModel
+
     @Inject
     lateinit var homeViewModel: HomeViewModel
 
@@ -48,13 +52,12 @@ class MainActivity : ComponentActivity() {
 
     companion object{
         var _this:MainActivity? = null
+
         fun navigateToDetailsScreen(entity:CryptoModel){
-            _this!!.startActivity(
-                Intent(_this, DetailsActivity::class.java)
-                    .apply{
-                        putExtra(EXTRA_ACTIVITY_DETAILS, entity)
-                    })
-            _this!!.finish()
+            Navigator.intentFor<DetailsActivity>(_this as Context)
+                .addExtra(EXTRA_ACTIVITY_DETAILS, entity)
+                .finishCaller()
+                .navigate()
         }
     }
 
@@ -93,9 +96,21 @@ class MainActivity : ComponentActivity() {
     private fun initViews(){
 
         setContent {
-            MainActivity_Main(homeViewModel,
-                              searchViewModel,
-                              favoritesViewModel)
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+
+                MainActivity_Main(homeViewModel,
+                                 searchViewModel,
+                                 favoritesViewModel)
+
+                NetworkStatusNotifier(
+                    modifier = Modifier.zIndex(2F)
+                                       .offset(y = (-70).dp),
+                    viewModel = mainActivityViewModel)
+            }
+
+
         }
     }
 
@@ -141,7 +156,7 @@ fun MainActivity_Main(homeViewModel: HomeViewModel,
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(100.dp)
+                                .height(200.dp)
                                 .background(color = Color.LightGray)
                         ) {}
 
@@ -149,36 +164,39 @@ fun MainActivity_Main(homeViewModel: HomeViewModel,
                     },
                     drawerGesturesEnabled = true,
                     bottomBar = {
-                        BottomNavigation(
-                            modifier = Modifier.height(70.dp),
-                            backgroundColor = Color.LightGray
-                        ) {
-                            val navBackStackEntry by navHostController.currentBackStackEntryAsState()
-                            val currentDestination = navBackStackEntry?.destination
+                            BottomNavigation(
+                                modifier = Modifier
+                                    .height(70.dp)
+                                    .fillMaxWidth(),
+                                backgroundColor = Color.LightGray
+                            ) {
+                                val navBackStackEntry by navHostController.currentBackStackEntryAsState()
+                                val currentDestination = navBackStackEntry?.destination
 
-                            MainActivityScreen.screensList.forEach { screen ->
-                                BottomNavigationItem(
-                                    selected = currentDestination?.hierarchy?.any {
-                                        it.route == screen.route
-                                    } == true,
-                                    onClick = {
-                                        navHostController.navigate(screen.route) {
-                                            launchSingleTop = true
-                                        }
-                                    },
-                                    label = {
-                                        Text(text = screen.route)
-                                    },
-                                    icon = {
-                                        Icon(
-                                            painter = painterResource(id = screen.icon),
-                                            contentDescription = null
-                                        )
-                                    },
-                                    alwaysShowLabel = true
-                                )
+                                MainActivityScreen.screensList.forEach { screen ->
+                                    BottomNavigationItem(
+                                        selected = currentDestination?.hierarchy?.any {
+                                            it.route == screen.route
+                                        } == true,
+                                        onClick = {
+                                            navHostController.navigate(screen.route) {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        label = {
+                                            Text(text = screen.route)
+                                        },
+                                        icon = {
+                                            Icon(
+                                                painter = painterResource(id = screen.icon),
+                                                contentDescription = null
+                                            )
+                                        },
+                                        alwaysShowLabel = true
+                                    )
+                                }
                             }
-                        }
+
                     }
                 ) {
 

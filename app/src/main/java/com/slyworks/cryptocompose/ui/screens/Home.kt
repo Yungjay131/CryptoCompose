@@ -1,6 +1,7 @@
 package com.slyworks.cryptocompose.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.runtime.*
@@ -23,12 +25,10 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberImagePainter
-import coil.size.Scale
-import coil.transform.CircleCropTransformation
 import com.slyworks.cryptocompose.App
+import com.slyworks.cryptocompose.IViewModel
 import com.slyworks.cryptocompose.R
 import com.slyworks.cryptocompose.ui.activities.main.HomeViewModel
-import com.slyworks.cryptocompose.IViewModel
 import com.slyworks.cryptocompose.ui.activities.main.MainActivity
 import com.slyworks.models.CryptoModel
 import com.slyworks.models.Outcome
@@ -117,7 +117,7 @@ fun CardListItem(entity: CryptoModel,
     /*TODO & fixme: make this use Box or ConstraintLayout*/
     Card(
         modifier = Modifier
-            .padding(8.dp)
+            .padding(bottom = 4.dp)
             .fillMaxWidth()
             .height(110.dp)
             .clickable(onClick = { onItemClick(entity) }),
@@ -196,9 +196,10 @@ fun CardListItem(entity: CryptoModel,
                             text = stringResource(id = R.string.price_placeholder, entity.priceUnit, entity.price)
                         )
                         
-                        FavoriteIconButton(modifier = Modifier.weight(0.3F)
-                                                              .height(30.dp)
-                                                              .align(Alignment.CenterVertically),
+                        FavoriteIconButton(modifier = Modifier
+                            .weight(0.3F)
+                            .height(30.dp)
+                            .align(Alignment.CenterVertically),
                                            entity = entity,
                                            viewModel = mViewModel)
                     }
@@ -218,7 +219,7 @@ fun FavoriteIconButton(modifier:Modifier,
         checked = isChecked,
         onCheckedChange = {
             isChecked = it
-            viewModel.setItemFavoriteStatus(entity, it)
+            viewModel.setItemFavoriteStatus(entity._id, it)
         },
     ) {
         Icon(
@@ -229,5 +230,27 @@ fun FavoriteIconButton(modifier:Modifier,
                 Icons.Default.FavoriteBorder,
             contentDescription = null,
             tint = Color.Magenta )
+    }
+}
+
+@Composable
+fun NetworkStatusNotifier(modifier: Modifier = Modifier,
+                          viewModel:IViewModel){
+    val networkState:Boolean by viewModel.observeNetworkState().observeAsState(false)
+
+    if(!networkState){
+        Row(
+            modifier = modifier
+                .height(25.dp)
+                .fillMaxWidth()
+                .background(color = Color.Black),
+            horizontalArrangement = Arrangement.Center
+        ){
+           Image(
+               imageVector = Icons.Filled.AccountCircle,
+               modifier = Modifier.size(10.dp),
+               contentDescription = "")
+           Text(text = "not connected")
+        }
     }
 }

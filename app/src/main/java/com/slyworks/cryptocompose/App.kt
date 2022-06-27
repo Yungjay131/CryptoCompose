@@ -30,6 +30,9 @@ class App : Application(), ImageLoaderFactory{
     lateinit var appComponent: ApplicationComponent
 
     companion object{
+       /* val imageLoader:ImageLoader = object:ImageLoader{
+
+        }*/
         val imageRequest:ImageRequest.Builder.() -> Unit = {
             memoryCachePolicy(CachePolicy.ENABLED)
             diskCachePolicy(CachePolicy.ENABLED)
@@ -69,7 +72,4 @@ class App : Application(), ImageLoaderFactory{
 
     }
 
-    private fun initRealm(){
-
-    }
 }

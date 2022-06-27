@@ -14,14 +14,23 @@ private constructor(private val value:Any? = null) {
     get() = value is Failure<*>
 
     val isError:Boolean
-    get() = value is Error
+    get() = value is Error<*>
     //endregion
+
+    fun<T> getTypedValue():T{
+        when{
+            isSuccess -> return (value as Success<T>).value as T
+            isFailure -> return (value as Failure<T>).value as T
+            isError -> return (value as Error<T>).value as T
+            else -> throw UnsupportedOperationException()
+        }
+    }
 
     fun getValue():Any?{
         when {
             isSuccess -> return (value as Success<*>).value
             isFailure -> return (value as Failure<*>).value
-            isError -> return (value as Error).error
+            isError -> return (value as Error<*>).value
             else -> return null
         }
     }
@@ -30,17 +39,8 @@ private constructor(private val value:Any? = null) {
        return when (value) {
            is Success<*> ->(value as? Success<*>)?.additionalInfo
            is Failure<*> ->(value as? Failure<*>)?.additionalInfo
-           else ->(value as? Error)?.message
+           else ->(value as? Error<*>)?.message
        }
-    }
-
-
-    fun <T> getOrNull():T?{
-        return when {
-            isSuccess -> value as T
-            isFailure -> null
-            else -> null
-        }
     }
 
     companion object{
@@ -50,8 +50,8 @@ private constructor(private val value:Any? = null) {
         fun <T> FAILURE(value: T? = null, reason:String? = null): Outcome {
             return Outcome(createFailureClass(value, reason))
         }
-        fun <T> ERROR(value: T? = null, error:Exception? = null) : Outcome {
-            return Outcome(createErrorClass(error, error?.message))
+        fun <T> ERROR(value: T? = null, error:String? = null) : Outcome {
+            return Outcome(createErrorClass(value, error))
         }
 
         private fun <T> createSuccessClass(value:T, additionalInfo: String?):Any{
@@ -62,8 +62,8 @@ private constructor(private val value:Any? = null) {
             return Failure(value,additionalInfo)
         }
 
-        private fun createErrorClass(error:Exception?, message:String?):Any{
-            return Error(error,message)
+        private fun <T> createErrorClass(value:T, message:String?):Any{
+            return Error(value,message)
         }
     }
 
@@ -71,5 +71,5 @@ private constructor(private val value:Any? = null) {
     private data class Failure<T>(val value:T?, val additionalInfo:String?)
    /* @JvmInline
     private value class Failure(val value:String?)*/
-    private data class Error(val error:Exception?, val message:String?)
+    private data class Error<T>(val value:T?, val message:String?)
 }

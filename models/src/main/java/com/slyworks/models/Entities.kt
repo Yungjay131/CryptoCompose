@@ -140,9 +140,9 @@ data class CryptoEntity3(@SerializedName("status")
 
         data class Quote(
             @SerializedName("NGN")
-            var ngn:NGN
+            var ngn:Currency
         ){
-            data class NGN(
+            data class Currency(
                 @SerializedName("price")
                 var price: Double = -1.0,
 

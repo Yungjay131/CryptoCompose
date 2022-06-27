@@ -23,7 +23,6 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
     companion object{
         fun mapModelToRealmModel(model: CryptoModel): CryptoModelRealm {
             return CryptoModelRealm(
-                id  = model.id,
                 _id = model._id,
                 image = model.image,
                 symbol = model.symbol,
@@ -39,9 +38,9 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                 tags = model.tags,
                 isFavorite = model.isFavorite )
         }
+
         fun mapRealmModelToModel(model: CryptoModelRealm): CryptoModel {
             return CryptoModel(
-                id = model.id,
                 _id = model._id,
                 image = model.image,
                 symbol = model.symbol,
@@ -94,37 +93,33 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
         }
     }
 
-    override fun getFavorites(): Single<List<CryptoModel>> {
+    override fun getFavorites(): Single<List<Int>> {
         return Single.create { emitter ->
             Realm.getInstance(config)
                 .executeTransaction(Realm.Transaction {
-                val l:List<CryptoModel> = it.where(CryptoModelRealm::class.java)
+                val l:List<CryptoModelID> = it.where(CryptoModelID::class.java)
                     .equalTo("isFavorite", true)
                     .findAll()
                     .sort("name", Sort.ASCENDING)
-                    .map(::mapRealmModelToModel)
 
-                emitter.onSuccess(l)
+                val r:List<Int> = l.map { it2 -> it2.id }
+                emitter.onSuccess(r)
             })
         }
     }
 
-    override fun addToFavorites(vararg data: CryptoModel): Completable {
+    override fun addToFavorites(vararg data: Int): Completable {
         return Completable.create { emitter ->
 
             try {
-                val l: List<CryptoModelRealm> =
+                val l: List<CryptoModelID> =
                     data.toList()
-                        .map(::mapModelToRealmModel)
+                        .map{ CryptoModelID(id = it) }
+
                  Realm.getInstance(config)
                      .executeTransaction {
                     l.forEach { i ->
-                        it.where(CryptoModelRealm::class.java)
-                            .equalTo("name", i.name)
-                            .findFirst()
-                            .apply {
-                                this?.isFavorite = true
-                            }
+                       it.insertOrUpdate(i)
                     }
 
                     emitter.onComplete()
@@ -136,20 +131,20 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
         }
     }
 
-    override fun removeFromFavorites(vararg data: CryptoModel): Completable {
+    override fun removeFromFavorites(vararg data: Int): Completable {
         return Completable.create { emitter ->
+
             try {
-                val l: List<CryptoModelRealm> = data.toList().map(::mapModelToRealmModel)
+                val l: List<CryptoModelID> =
+                    data.toList()
+                        .map{ CryptoModelID(id = it) }
 
                  Realm.getInstance(config)
                      .executeTransaction {
                     l.forEach { i ->
-                        it.where(CryptoModelRealm::class.java)
-                            .equalTo("name", i.name)
+                        it.where(CryptoModelID::class.java)
+                            .equalTo("id", i.id)
                             .findFirst()
-                            .apply {
-                                this?.isFavorite = false
-                            }
                     }
 
                     emitter.onComplete()

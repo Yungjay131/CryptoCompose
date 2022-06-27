@@ -14,7 +14,7 @@ import retrofit2.http.Query
  */
 interface CoinMarketApi {
     companion object {
-        /*TODO:move API_KEY to server side, maybe Firebase*/
+        /*TODO:move API_KEY server side, maybe Firebase*/
         const val CRYPTO_URL_PATH = "https://s2.coinmarketcap.com/static/img/coins/128x128/%s.png"
         const val URL = "https://pro-api.coinmarketcap.com"
         const val ENDPOINT_FETCH_CRYPTO_DATA =
@@ -33,6 +33,13 @@ interface CoinMarketApi {
 
     @Headers("X-CMC_PRO_API_KEY:$API_KEY")
     @GET("/v1/cryptocurrency/info")
-    fun getSpecificCryptoInformation(@Query("slug") query:String):Single<CryptoEntity2>
+    fun getSpecificCryptoInformation(@Query("slug") query:String)
+    : Single<CryptoEntity2>
+
+    @Headers("X-CMC_PRO_API_KEY:$API_KEY")
+    @GET("/v1/cryptocurrency/quotes/latest")
+    fun getMultipleCryptoInformation(@Query("id") ids:String,
+                                     @Query("convert") currency: String = "NGN")
+    : Single<CryptoEntity3>
 }
 

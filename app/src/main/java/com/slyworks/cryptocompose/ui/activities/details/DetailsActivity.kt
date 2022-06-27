@@ -1,6 +1,6 @@
 package com.slyworks.cryptocompose.ui.activities.details
 
-import android.content.Intent
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,6 +17,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.slyworks.cryptocompose.EXTRA_ACTIVITY_DETAILS
+import com.slyworks.cryptocompose.Navigator
+import com.slyworks.cryptocompose.Navigator.Companion.getExtra
 import com.slyworks.cryptocompose.appComp
 import com.slyworks.cryptocompose.ui.activities.main.MainActivity
 import com.slyworks.cryptocompose.ui.screens.*
@@ -28,9 +30,10 @@ import javax.inject.Inject
 class DetailsActivity : ComponentActivity() {
     //region Vars
     @Inject
-    lateinit var detailsViewModel: DetailsViewModel
+    lateinit var detailsViewModel: DetailsActivityViewModel
 
     private lateinit var mEntity:CryptoModel
+    private lateinit var mId:String
     //endregion
 
     companion object{
@@ -38,8 +41,9 @@ class DetailsActivity : ComponentActivity() {
 
         @ExperimentalUnitApi
         fun navigateToMainScreen(){
-            _this!!.startActivity(Intent(_this, MainActivity::class.java))
-            _this!!.finish()
+            Navigator.intentFor<MainActivity>(_this as Context)
+                .finishCaller()
+                .navigate()
         }
     }
 
@@ -68,22 +72,22 @@ class DetailsActivity : ComponentActivity() {
             .build()
             .inject(this)
 
-        mEntity = intent.extras!!.getParcelable(EXTRA_ACTIVITY_DETAILS)!!
+        //mEntity = intent.extras!!.getParcelable(EXTRA_ACTIVITY_DETAILS)!!
+        mId = intent.getExtra<String>(EXTRA_ACTIVITY_DETAILS)
+        detailsViewModel.getData(mId)
     }
 
     @ExperimentalUnitApi
     private fun initViews(){
         setContent {
-            DetailsActivity_Main(viewModel = detailsViewModel,
-                                entity = mEntity)
+            DetailsActivity_Main(viewModel = detailsViewModel)
         }
     }
 }
 
 @ExperimentalUnitApi
 @Composable
-fun DetailsActivity_Main(viewModel:DetailsViewModel,
-                         entity:CryptoModel){
+fun DetailsActivity_Main(viewModel:DetailsActivityViewModel){
     CryptoComposeTheme {
         val scaffoldState = rememberScaffoldState()
         val scope = rememberCoroutineScope()
@@ -115,8 +119,7 @@ fun DetailsActivity_Main(viewModel:DetailsViewModel,
                 startDestination = DetailsActivityScreen.route_details
             ){
                 composable(DetailsActivityScreen.route_details){
-                    DetailMain(viewModel = viewModel,
-                               entity = entity)
+                    DetailMain(viewModel = viewModel)
                 }
             }
         }

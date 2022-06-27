@@ -17,12 +17,18 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
     private val TAG: String? = ApiRepositoryImpl::class.simpleName
     //endregion
 
+
     override fun getData():Single<List<CryptoModel>> =
         mInstance.getCryptoInformation()
                  .map(::mapResponseToCryptoModel2)
                  .doOnError {
                      Log.e(TAG, "getData: error occurred", it )
                  }
+
+    override fun getMultipleCryptoInformation(ids: String): Single<CryptoModel> =
+        mInstance.getMultipleCryptoInformation(ids)
+                 .map{ it.data.first() }
+                 .map(::mapResponseToCryptoModel2)
 
     override fun getSpecificCryptocurrency(query: String): Single<CryptoModelDetails> =
         mInstance.getSpecificCryptoInformation(query)
@@ -45,61 +51,31 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
             dateAdded = entity.data.one.dateAdded )
     }
 
-    private fun mapResponseToCryptoModel(c:CryptoEntity):List<CryptoModel>{
-        val l:MutableList<CryptoModel> = mutableListOf()
-
-        if(c.data.isNullOrEmpty())
-            return emptyList()
-
-        c.data.forEach {
-            val e = CryptoModel(
-                                id = "",
-                                _id = it.id,
-                                image = parseImageString(it.id),
-                                symbol = it.symbol ?: "",
-                                name = it.name ?: "",
-                                maxSupply = it.maxSupply,
-                                circulatingSupply = it.circulatingSupply,
-                                totalSupply = it.totalSupply,
-                                cmcRank = it.cmcRank,
-                                lastUpdated = it.lastUpdated ?: "",
-                                price = it.quote?.NGN?.price ?: 0.0,
-                                priceUnit = "₦",
-                                marketCap = it.quote?.NGN?.marketCap,
-                                dateAdded = it.dateAdded ?: "",
-                                tags = parseTagsString(it.tags)
-                                )
-
-            l.add(e)
-        }
-
-        return l
-    }
-
     private fun mapResponseToCryptoModel2(ce:CryptoEntity3):List<CryptoModel>{
         return with(mutableListOf<CryptoModel>()){
             ce.data.forEach { c ->
-                add(
-                    CryptoModel(
-                        id = "",
-                        _id = c._id,
-                        image = parseImageString(c._id),
-                        symbol = c.symbol,
-                        name = c.name,
-                        maxSupply = c.maxSupply.parseDouble(),
-                        circulatingSupply = c.circulatingSupply.parseDouble(),
-                        totalSupply = c.totalSupply.parseDouble(),
-                        cmcRank = c.cmcRank,
-                        lastUpdated = c.lastUpdated,
-                        price = c.quote.ngn.price,
-                        priceUnit = "₦",
-                        marketCap = c.quote.ngn.marketCap.parseDouble(),
-                        dateAdded = c.dateAdded,
-                        tags = parseTagsString(c.tags) )
-                )
+                add(mapResponseToCryptoModel2(c))
             }
             this
         }
+    }
+
+    private fun mapResponseToCryptoModel2(c:CryptoEntity3.CryptoCurrency3):CryptoModel{
+        return CryptoModel(
+            _id = c._id,
+            image = parseImageString(c._id),
+            symbol = c.symbol,
+            name = c.name,
+            maxSupply = c.maxSupply.parseDouble(),
+            circulatingSupply = c.circulatingSupply.parseDouble(),
+            totalSupply = c.totalSupply.parseDouble(),
+            cmcRank = c.cmcRank,
+            lastUpdated = c.lastUpdated,
+            price = c.quote.ngn.price,
+            priceUnit = "₦",
+            marketCap = c.quote.ngn.marketCap.parseDouble(),
+            dateAdded = c.dateAdded,
+            tags = parseTagsString(c.tags) )
     }
 
     private fun Double?.parseDouble():Double =

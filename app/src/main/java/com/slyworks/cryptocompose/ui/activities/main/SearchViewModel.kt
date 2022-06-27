@@ -5,8 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.slyworks.cryptocompose.IViewModel
 import com.slyworks.data.DataManager
-import com.slyworks.models.CryptoModel
-import com.slyworks.models.CryptoModelDetails
+import com.slyworks.models.CryptoModelCombo
 import com.slyworks.models.Outcome
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
@@ -25,13 +24,32 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
 
     val searchObservable: PublishSubject<String> = PublishSubject.create()
 
-    private val _searchStateLiveData: MutableLiveData<Outcome> = MutableLiveData(Outcome.ERROR(null))
-    val searchStateLiveData: LiveData<Outcome>
-        get() = _searchStateLiveData
+    private val _successState:MutableLiveData<Boolean> = MutableLiveData()
+    val successState:LiveData<Boolean>
+    get() = _successState
 
-    private val _searchDataListLiveData: MutableLiveData<CryptoModelDetails> = MutableLiveData()
-    val searchDataListLiveData: LiveData<CryptoModelDetails>
-        get() = _searchDataListLiveData
+    private val _successData:MutableLiveData<CryptoModelCombo> = MutableLiveData()
+    val successData:LiveData<CryptoModelCombo>
+    get() = _successData
+
+
+    private val _failureState:MutableLiveData<Boolean> = MutableLiveData()
+    val failureState:LiveData<Boolean>
+    get() = _failureState
+
+    private val _failureData:MutableLiveData<String> = MutableLiveData()
+    val failureData:LiveData<String>
+    get() = _failureData
+
+    private val _errorState:MutableLiveData<Boolean> = MutableLiveData()
+    val errorState:LiveData<Boolean>
+    get() = _errorState
+
+    private val _errorData:MutableLiveData<String> = MutableLiveData()
+    val errorData:LiveData<String>
+    get() = _errorData
+
+    val progressState:MutableLiveData<Boolean> = MutableLiveData()
 
     private val mSubscriptions = CompositeDisposable()
     //endregion
@@ -40,40 +58,47 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
     fun search(){
         val d = searchObservable
             .debounce(3, TimeUnit.SECONDS)
-            .switchMap {
-                dataManager.getSpecificCryptocurrency(it)
+            .switchMap { s ->
+                dataManager.observeNetworkStatus()
+                    .flatMap {
+                        if(it)
+                          dataManager.getSpecificCryptocurrency(s)
+                              .flatMap {
+                                  if(it == null)
+                                      Observable.just(Outcome.FAILURE(value = "no results for query found"))
+                                  else
+                                      Observable.just(Outcome.SUCCESS(it))
+                              }
+                        else
+                           Observable.just(Outcome.ERROR(value = "no internet connection"))
+                    }
             }
             .observeOn(Schedulers.io())
             .subscribeOn(Schedulers.io())
             .subscribe {
-                if(it == null) {
-                    _searchStateLiveData.postValue(Outcome.FAILURE(value = "no results for query found"))
-                } else{
-                    _searchStateLiveData.postValue(Outcome.SUCCESS(value = null))
-                    _searchDataListLiveData.postValue(it)
+                progressState.postValue(false)
+
+                when{
+                    it.isSuccess ->{
+                        _successData.postValue(it.getTypedValue<CryptoModelCombo>())
+                        _successState.postValue(true)
+                    }
+                    it.isFailure ->{
+                        _failureData.postValue(it.getTypedValue<String>())
+                        _failureState.postValue(true)
+                    }
+                    it.isError ->{
+                        _errorData.postValue(it.getTypedValue<String>())
+                        _errorState.postValue(true)
+                    }
                 }
             }
 
         mSubscriptions.add(d)
     }
 
-    fun search(query:String){
-        val d =  dataManager.getSpecificCryptocurrency(query)
-            .observeOn(Schedulers.io())
-            .subscribeOn(Schedulers.io())
-            .subscribe {
-                if(it == null) {
-                    _searchStateLiveData.postValue(Outcome.FAILURE(value = "no results for query found"))
-                } else{
-                    _searchStateLiveData.postValue(Outcome.SUCCESS(value = null))
-                    _searchDataListLiveData.postValue(it)
-                }
-            }
 
-        mSubscriptions.add(d)
-    }
-
-    override fun setItemFavoriteStatus(entity:CryptoModel,status:Boolean){
+    override fun setItemFavoriteStatus(entity:Int,status:Boolean){
         val o: Completable =
             if (status)
                 dataManager.addToFavorites(entity)
@@ -85,6 +110,20 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
             .subscribe()
 
         mSubscriptions.add(d)
+    }
+
+    override fun observeNetworkState(): LiveData<Boolean> {
+        val l:MutableLiveData<Boolean> = MutableLiveData()
+        val d = dataManager.observeNetworkStatus()
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .subscribe {
+                l.postValue(it)
+            }
+
+        mSubscriptions.add(d)
+
+        return l
     }
 
     override fun onCleared() {

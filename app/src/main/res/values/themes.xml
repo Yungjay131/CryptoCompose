@@ -15,10 +15,18 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="AppTheme.CryptoCompose.NoActionBar">
+    <style name="AppTheme.CryptoCompose.NoActionBar" parent="AppTheme.CryptoCompose">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="android:statusBarColor">@color/black</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:statusBarColor">@color/white</item>
+    </style>
+
+    <style name="AppTheme.CryptoCompose.NoActionBar2" parent="AppTheme.CryptoCompose">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:statusBarColor">@color/white</item>
     </style>
 
     <style name="Theme.CryptoCompose.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
@@ -34,4 +42,13 @@
     <style name="AppTheme.CryptoCompose.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="AppTheme.CryptoCompose.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="AppTheme.splash.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="AppTheme.splash.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="AppTheme.splash.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 </resources>

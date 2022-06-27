@@ -1,13 +1,10 @@
 package com.slyworks.cryptocompose.ui.screens
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -22,7 +19,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.VerticalAlignmentLine
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.ExperimentalUnitApi
@@ -35,9 +31,7 @@ import coil.transform.CircleCropTransformation
 import com.airbnb.lottie.compose.*
 import com.slyworks.cryptocompose.R
 import com.slyworks.cryptocompose.ui.activities.main.SearchViewModel
-import com.slyworks.models.CryptoModel
-import com.slyworks.models.CryptoModelDetails
-import com.slyworks.models.Outcome
+import com.slyworks.models.CryptoModelCombo
 import java.util.regex.Pattern
 
 
@@ -51,58 +45,58 @@ fun check(query:String):Boolean = !Pattern.matches("[0-9.,]", query)
 @ExperimentalUnitApi
 @Composable
 fun SearchMain(viewModel: SearchViewModel){
-    val state:State<Outcome?> = viewModel.searchStateLiveData.observeAsState()
-    val list:State<CryptoModelDetails?> = viewModel.searchDataListLiveData.observeAsState()
-    val progressState:MutableState<Boolean> = remember{ mutableStateOf(true) }
+    val successState:State<Boolean> = viewModel.successState.observeAsState(initial = false)
+    val successData:State<CryptoModelCombo?> = viewModel.successData.observeAsState()
+    val failureState:State<Boolean> = viewModel.failureState.observeAsState(initial = false)
+    val failureData:State<String?> = viewModel.failureData.observeAsState()
+    val errorState:State<Boolean> = viewModel.errorState.observeAsState(initial = false)
+    val errorData:State<String?> = viewModel.errorData.observeAsState()
+    val progressState:State<Boolean> = viewModel.progressState.observeAsState(initial = false)
 
-        Column {
-            SearchViewComposable(
-                onSearchTextChanged = {
-                    progressState.value = true
-                    viewModel.searchObservable.onNext(it)
-                },
-                onClearClick = {
-                    progressState.value = true
-                    viewModel.searchObservable.onNext(it)
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if(progressState.value)
-                ProgressBar()
-
-            when{
-               state.value!!.isSuccess ->{
-                   progressState.value = false
-
-                   Column {
-                       Image(
-                           painter = rememberImagePainter(
-                               data = list.value!!.logo.toString(),
-                               builder = {
-                                   scale(Scale.FILL)
-                                   placeholder(R.drawable.ic_placeholder)
-                                   transformations(CircleCropTransformation())
-                               }
-                           ),
-                           contentDescription = "",
-                           modifier = Modifier
-                               .size(80.dp))
-                   }
-               }
-                state.value!!.isFailure ->{
-                    progressState.value = false
-
-                    NoResultFoundComposable()
-                }
-                state.value!!.isError -> progressState.value = true
-
-
+    Column {
+        SearchViewComposable(
+            onSearchTextChanged = {
+                viewModel.progressState.value = true
+                viewModel.searchObservable.onNext(it)
+            },
+            onClearClick = {
+                viewModel.progressState.value = true
+                viewModel.searchObservable.onNext(it)
             }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+           when {
+             progressState.value ->{
+                ProgressBar()
+             }
+             successState.value ->{
+                 Column {
+                     Image(
+                         painter = rememberImagePainter(
+                             data = successData.value!!.model!!.image.toString(),
+                             builder = {
+                                 scale(Scale.FILL)
+                                 placeholder(R.drawable.ic_placeholder)
+                                 transformations(CircleCropTransformation())
+                             }
+                         ),
+                         contentDescription = "",
+                         modifier = Modifier
+                             .size(80.dp))
+                 }
+             }
+             failureState.value ->{
+                 NoResultFoundComposable()
+             }
+             errorState.value ->{
+                 ErrorComposable2(text = errorData.value!!)
+             }
+           }
 
         }
-}
+    }
 
 
 @ExperimentalComposeUiApi
@@ -194,8 +188,10 @@ fun NoResultFoundComposable(){
 }
 
 @Composable
-fun DisplayLottieAnim(modifier: Modifier){
-    val animationSpec by rememberLottieComposition(spec = LottieCompositionSpec.RawRes(R.raw.not_found))
+fun DisplayLottieAnim(resourceId:Int = R.raw.not_found,
+                      modifier: Modifier){
+    val animationSpec by rememberLottieComposition(
+        spec = LottieCompositionSpec.RawRes(resourceId))
     LottieAnimation(
         modifier = modifier,
         composition = animationSpec,

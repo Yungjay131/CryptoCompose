@@ -35,20 +35,20 @@ class FavoritesViewModel(private var dataManager:DataManager) : ViewModel(), IVi
        val d = dataManager.getFavorites()
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
-            .doOnSuccess {
-                _favoriteStateLiveData.postValue(Outcome.SUCCESS(null))
-                _favoriteDataListLiveData.postValue(it)
-            }
-           .doOnError {
-               _favoriteStateLiveData.postValue(Outcome.FAILURE("you have"+
-                       " no favorites at the moment, check the \"Favorite icon\" to add an item to favorites"))
+           .subscribe {
+               if(it.isNullOrEmpty())
+                   _favoriteStateLiveData.postValue(Outcome.FAILURE("you have"+
+                           " no favorites at the moment, check the \"Favorite icon\" to add an item to favorites"))
+               else{
+                   _favoriteStateLiveData.postValue(Outcome.SUCCESS(null))
+                   _favoriteDataListLiveData.postValue(it)
+               }
            }
-           .subscribe()
 
         mSubscriptions.add(d)
     }
 
-    override fun setItemFavoriteStatus(entity:CryptoModel, status:Boolean){
+    override fun setItemFavoriteStatus(entity:Int, status:Boolean){
         val o: Completable =
             if (status)
                 dataManager.addToFavorites(entity)
@@ -60,6 +60,20 @@ class FavoritesViewModel(private var dataManager:DataManager) : ViewModel(), IVi
             .subscribe()
 
         mSubscriptions.add(d)
+    }
+
+    override fun observeNetworkState(): LiveData<Boolean> {
+        val l:MutableLiveData<Boolean> = MutableLiveData()
+        val d = dataManager.observeNetworkStatus()
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .subscribe {
+                l.postValue(it)
+            }
+
+        mSubscriptions.add(d)
+
+        return l
     }
 
     override fun onCleared() {

@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import com.slyworks.cryptocompose.ui.activities.details.DetailsActivity
 import com.slyworks.cryptocompose.ui.activities.main.MainActivity
+import com.slyworks.cryptocompose.ui.activities.onboarding.OnboardingActivity
 import com.slyworks.di.ActivityScope
 import dagger.BindsInstance
 import dagger.Subcomponent
@@ -22,6 +23,7 @@ interface ActivityComponent {
     @ExperimentalUnitApi
     fun inject(activity: MainActivity)
     fun inject(activity: DetailsActivity)
+    fun inject(activity: OnboardingActivity)
 
     @Subcomponent.Builder
     interface Builder{

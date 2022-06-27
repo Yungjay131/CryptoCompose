@@ -49,7 +49,7 @@ class HomeViewModel(private var dataManager: DataManager) : ViewModel(), IViewMo
                 },
                 {
                     Log.e(TAG, "getData: error occurred", it)
-                    _homeStateLiveData.postValue(Outcome.FAILURE("an error occurred"))
+                    _homeStateLiveData.postValue(Outcome.FAILURE("an error occurred while processing your request"))
                 }
             )
 
@@ -57,7 +57,7 @@ class HomeViewModel(private var dataManager: DataManager) : ViewModel(), IViewMo
     }
 
 
-    override fun setItemFavoriteStatus(entity:CryptoModel, status:Boolean){
+    override fun setItemFavoriteStatus(entity:Int, status:Boolean){
         val o: Completable =
             if (status)
                 dataManager.addToFavorites(entity)
@@ -70,6 +70,21 @@ class HomeViewModel(private var dataManager: DataManager) : ViewModel(), IViewMo
 
         mSubscriptions.add(d)
     }
+
+    override fun observeNetworkState(): LiveData<Boolean> {
+        val l:MutableLiveData<Boolean> = MutableLiveData()
+        val d = dataManager.observeNetworkStatus()
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .subscribe {
+                l.postValue(it)
+            }
+
+        mSubscriptions.add(d)
+
+        return l
+    }
+
     override fun onCleared() {
         super.onCleared()
         mSubscriptions.clear()
