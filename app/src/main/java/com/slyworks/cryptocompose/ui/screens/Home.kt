@@ -46,14 +46,19 @@ fun HomeMain(viewModel: HomeViewModel){
     val progressState:MutableState<Boolean> = remember{ mutableStateOf(true) }
 
 
-    if(progressState.value) {
+    remember("KEY"){ mutableStateOf(viewModel.getData()) }
+
+    if(progressState.value)
         ProgressBar()
-    }
+
 
     when{
         state.value!!.isSuccess ->{
 
-            LazyColumn {
+            LazyColumn(
+                modifier = Modifier.padding(bottom = 70.dp)
+                    .fillMaxSize()
+            ){
                 itemsIndexed(items = list.value!!) { index, item ->
                     CardListItem(entity = item, viewModel)
                 }
@@ -113,14 +118,14 @@ fun ErrorComposable(text:String){
 @Composable
 fun CardListItem(entity: CryptoModel,
                  mViewModel: IViewModel,
-                 onItemClick:(CryptoModel) -> Unit = MainActivity.Companion::navigateToDetailsScreen){
+                 onItemClick:(Int) -> Unit = MainActivity.Companion::navigateToDetailsScreen){
     /*TODO & fixme: make this use Box or ConstraintLayout*/
     Card(
         modifier = Modifier
             .padding(bottom = 4.dp)
             .fillMaxWidth()
             .height(110.dp)
-            .clickable(onClick = { onItemClick(entity) }),
+            .clickable(onClick = { onItemClick(entity._id) }),
         shape = RoundedCornerShape(8.dp),
         elevation = 4.dp
     ) {

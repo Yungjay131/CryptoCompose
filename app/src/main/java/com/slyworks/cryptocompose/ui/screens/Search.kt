@@ -5,8 +5,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -53,6 +55,8 @@ fun SearchMain(viewModel: SearchViewModel){
     val errorData:State<String?> = viewModel.errorData.observeAsState()
     val progressState:State<Boolean> = viewModel.progressState.observeAsState(initial = false)
 
+    remember("KEY"){ mutableStateOf(viewModel.initSearch()) }
+
     Column {
         SearchViewComposable(
             onSearchTextChanged = {
@@ -72,20 +76,7 @@ fun SearchMain(viewModel: SearchViewModel){
                 ProgressBar()
              }
              successState.value ->{
-                 Column {
-                     Image(
-                         painter = rememberImagePainter(
-                             data = successData.value!!.model!!.image.toString(),
-                             builder = {
-                                 scale(Scale.FILL)
-                                 placeholder(R.drawable.ic_placeholder)
-                                 transformations(CircleCropTransformation())
-                             }
-                         ),
-                         contentDescription = "",
-                         modifier = Modifier
-                             .size(80.dp))
-                 }
+                DetailsScrollColumn(viewModel = viewModel, entity = successData.value!!)
              }
              failureState.value ->{
                  NoResultFoundComposable()
@@ -98,7 +89,19 @@ fun SearchMain(viewModel: SearchViewModel){
         }
     }
 
+@Composable
+fun SearchMain(modifier: Modifier = Modifier,
+               entity:CryptoModelCombo){
 
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)) {
+
+    }
+}
 @ExperimentalComposeUiApi
 @Composable
 fun SearchViewComposable(onSearchTextChanged:(String) -> Unit,
@@ -146,8 +149,8 @@ fun SearchViewComposable(onSearchTextChanged:(String) -> Unit,
             AnimatedVisibility(
                 visible = showClearButton,
                 enter = fadeIn(),
-                exit = fadeOut()) {
-
+                exit = fadeOut())
+            {
                 IconButton(onClick = { onClearClick(state) }) {
                     Icon(
                         imageVector = Icons.Filled.Close,
@@ -157,8 +160,8 @@ fun SearchViewComposable(onSearchTextChanged:(String) -> Unit,
         },
         maxLines = 1,
         singleLine = true,
-        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = {
+        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = {
             keyboardController?.hide()
             onSearchTextChanged(state)
         })

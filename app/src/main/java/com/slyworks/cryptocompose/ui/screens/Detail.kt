@@ -10,6 +10,8 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,20 +37,20 @@ import com.slyworks.models.Outcome
 private fun String.parseTags():List<String> = this.split(",")
 
 @Composable
-fun DetailMain(viewModel: IViewModel){
+fun DetailMain(viewModel: IViewModel, entityID:String){
     val vModel = (viewModel as DetailsActivityViewModel)
 
     val state: State<Outcome?> = vModel.detailsStateLiveData.observeAsState(Outcome.ERROR(null))
     val message: State<String?> = vModel.detailsMessageLiveData.observeAsState()
     val data:State<CryptoModelCombo?> = vModel.detailsDataLiveData.observeAsState()
 
-    val scrollState = rememberScrollState()
+    remember("KEY"){ mutableStateOf(vModel.getData(entityID)) }
+
    Column(
         verticalArrangement = Arrangement.SpaceAround,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
     ) {
        /*TODO:show favorite icon on CollapsingToolBarLayout*/
 
@@ -148,7 +150,10 @@ fun NoInternetComposable(){
 @Composable
 fun DetailsScrollColumn(viewModel:IViewModel,
                         entity:CryptoModelCombo){
-    Column() {
+
+    val scrollState = rememberScrollState()
+
+    Column(modifier = Modifier.verticalScroll(scrollState)) {
         Image(
             painter = rememberImagePainter(
                 data = entity.model!!.image as String,

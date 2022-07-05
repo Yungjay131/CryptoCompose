@@ -23,31 +23,48 @@ import com.slyworks.models.Outcome
 @ExperimentalUnitApi
 @Composable
 fun FavoriteMain(viewModel: FavoritesViewModel){
-    val state: State<Outcome?> = viewModel.favoriteStateLiveData.observeAsState()
-    val list: State<List<CryptoModel>?> = viewModel.favoriteDataListLiveData.observeAsState()
-    val progressState: MutableState<Boolean> = remember{ mutableStateOf(true) }
+    val successData:State<List<CryptoModel>?> = viewModel.successData.observeAsState()
+    val successState:State<Boolean> = viewModel.successState.observeAsState(initial = false)
+    val noDataState:State<Boolean> = viewModel.noDataState.observeAsState(initial = false)
+    val noNetworkState:State<Boolean> = viewModel.noNetworkState.observeAsState(initial = false)
+    val errorData:State<String?> = viewModel.errorData.observeAsState()
+    val errorState:State<Boolean> = viewModel.errorState.observeAsState(initial = false)
+    val progressState:State<Boolean> = viewModel.progressState.observeAsState(initial = true)
 
-    if(progressState.value){
-       ProgressBar()
-    }
+    remember("KEY") { mutableStateOf(viewModel.getFavorites()) }
 
     when{
-        state.value!!.isSuccess ->{
-            progressState.value = false
-
-            LazyColumn {
-                itemsIndexed(items = list.value!!) { index, item ->
-                    CardListItem(entity = item, viewModel)
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-            }
+        progressState.value ->{
+            ProgressBar()
         }
-        state.value!!.isFailure ->{
-            progressState.value = false
-
-            ErrorComposable(text = state.value!!.getValue() as String)
+        successState.value ->{
+            FavoritesList(viewModel = viewModel, items = successData.value!!)
         }
-        state.value!!.isError -> progressState.value = true
+        noDataState.value ->{
+            ErrorComposable(text = "you have no favorites at the moment."+
+                    "Check the \"Favorite\" icon to add an item to your Favorites")
+        }
+        noNetworkState.value ->{
+            NoInternetComposable()
+        }
+        errorState.value ->{
+            ErrorComposable(text = errorData.value!!)
+        }
+
     }
 
+}
+
+@ExperimentalUnitApi
+@Composable
+fun FavoritesList(modifier:Modifier = Modifier,
+                  viewModel: FavoritesViewModel,
+                  items:List<CryptoModel>){
+
+    LazyColumn {
+        itemsIndexed(items = items) { index, item ->
+            CardListItem(entity = item, viewModel)
+            Spacer(modifier = modifier.height(4.dp))
+        }
+    }
 }

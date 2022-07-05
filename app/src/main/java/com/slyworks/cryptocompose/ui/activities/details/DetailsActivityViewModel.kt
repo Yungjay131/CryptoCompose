@@ -36,7 +36,7 @@ class DetailsActivityViewModel(private var dataManager: DataManager) : ViewModel
     //endregion
 
     fun getData(query:String){
-        if(dataManager.getNetworkStatus()){
+        if(!dataManager.getNetworkStatus()){
             _detailsStateLiveData.postValue(
                 Outcome.FAILURE(value = 0, reason = "you are currently not connected to the internet")
             )

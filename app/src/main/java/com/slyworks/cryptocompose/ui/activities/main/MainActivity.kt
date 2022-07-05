@@ -53,9 +53,9 @@ class MainActivity : ComponentActivity() {
     companion object{
         var _this:MainActivity? = null
 
-        fun navigateToDetailsScreen(entity:CryptoModel){
+        fun navigateToDetailsScreen(id:Int){
             Navigator.intentFor<DetailsActivity>(_this as Context)
-                .addExtra(EXTRA_ACTIVITY_DETAILS, entity)
+                .addExtra(EXTRA_ACTIVITY_DETAILS, id)
                 .finishCaller()
                 .navigate()
         }
@@ -85,31 +85,15 @@ class MainActivity : ComponentActivity() {
             .componentActivity(this)
             .build()
             .inject(this)
-
-        /*making the call here to avoid it being repeated in the composable*/
-        homeViewModel.getData()
-        favoritesViewModel.getFavorites()
-        searchViewModel.search()
     }
 
     @ExperimentalComposeUiApi
     private fun initViews(){
 
         setContent {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-
                 MainActivity_Main(homeViewModel,
                                  searchViewModel,
                                  favoritesViewModel)
-
-                NetworkStatusNotifier(
-                    modifier = Modifier.zIndex(2F)
-                                       .offset(y = (-70).dp),
-                    viewModel = mainActivityViewModel)
-            }
-
 
         }
     }

@@ -73,21 +73,20 @@ class DetailsActivity : ComponentActivity() {
             .inject(this)
 
         //mEntity = intent.extras!!.getParcelable(EXTRA_ACTIVITY_DETAILS)!!
-        mId = intent.getExtra<String>(EXTRA_ACTIVITY_DETAILS)
-        detailsViewModel.getData(mId)
+        mId = intent.getExtra<Int>(EXTRA_ACTIVITY_DETAILS).toString()
     }
 
     @ExperimentalUnitApi
     private fun initViews(){
         setContent {
-            DetailsActivity_Main(viewModel = detailsViewModel)
+            DetailsActivity_Main(viewModel = detailsViewModel, mId)
         }
     }
 }
 
 @ExperimentalUnitApi
 @Composable
-fun DetailsActivity_Main(viewModel:DetailsActivityViewModel){
+fun DetailsActivity_Main(viewModel:DetailsActivityViewModel, id:String){
     CryptoComposeTheme {
         val scaffoldState = rememberScaffoldState()
         val scope = rememberCoroutineScope()
@@ -119,7 +118,7 @@ fun DetailsActivity_Main(viewModel:DetailsActivityViewModel){
                 startDestination = DetailsActivityScreen.route_details
             ){
                 composable(DetailsActivityScreen.route_details){
-                    DetailMain(viewModel = viewModel)
+                    DetailMain(viewModel = viewModel, id)
                 }
             }
         }

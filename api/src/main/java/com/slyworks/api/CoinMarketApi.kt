@@ -1,8 +1,6 @@
 package com.slyworks.api
 
-import com.slyworks.models.CryptoEntity
-import com.slyworks.models.CryptoEntity2
-import com.slyworks.models.CryptoEntity3
+import com.slyworks.models.*
 import io.reactivex.rxjava3.core.Single
 import retrofit2.http.GET
 import retrofit2.http.Headers
@@ -34,12 +32,13 @@ interface CoinMarketApi {
     @Headers("X-CMC_PRO_API_KEY:$API_KEY")
     @GET("/v1/cryptocurrency/info")
     fun getSpecificCryptoInformation(@Query("slug") query:String)
-    : Single<CryptoEntity2>
+    : Single<CryptoEntity5>
 
     @Headers("X-CMC_PRO_API_KEY:$API_KEY")
     @GET("/v1/cryptocurrency/quotes/latest")
-    fun getMultipleCryptoInformation(@Query("id") ids:String,
-                                     @Query("convert") currency: String = "NGN")
-    : Single<CryptoEntity3>
+    fun getCryptoInformation(@Query("id") ids:String,
+                             @Query("convert") currency: String = "NGN")
+    : Single<CryptoEntity4>
+
 }
 

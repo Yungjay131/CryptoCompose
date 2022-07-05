@@ -20,13 +20,31 @@ class FavoritesViewModel(private var dataManager:DataManager) : ViewModel(), IVi
     //region Vars
     private val TAG: String? = FavoritesViewModel::class.simpleName
 
-    private val _favoriteStateLiveData: MutableLiveData<Outcome> = MutableLiveData(Outcome.ERROR(null))
-    val favoriteStateLiveData: LiveData<Outcome>
-        get() = _favoriteStateLiveData
+    private val _successState:MutableLiveData<Boolean> = MutableLiveData()
+    val successState:LiveData<Boolean>
+    get() = _successState
 
-    private val _favoriteDataListLiveData: MutableLiveData<List<CryptoModel>> = MutableLiveData()
-    val favoriteDataListLiveData: LiveData<List<CryptoModel>>
-        get() = _favoriteDataListLiveData
+    private val _successData:MutableLiveData<List<CryptoModel>> = MutableLiveData()
+    val successData:LiveData<List<CryptoModel>>
+    get() = _successData
+
+    private val _noDataState:MutableLiveData<Boolean> = MutableLiveData()
+    val noDataState:LiveData<Boolean>
+    get() = _noDataState
+
+    private val _noNetworkState:MutableLiveData<Boolean> = MutableLiveData()
+    val noNetworkState:LiveData<Boolean>
+    get() = _noNetworkState
+
+    private val _errorState:MutableLiveData<Boolean> = MutableLiveData()
+    val errorState:LiveData<Boolean>
+    get() = _errorState
+
+    private val _errorData:MutableLiveData<String> = MutableLiveData()
+    val errorData:LiveData<String>
+    get() = _errorData
+
+    val progressState:MutableLiveData<Boolean> = MutableLiveData()
 
     private val mSubscriptions = CompositeDisposable()
     //endregion
@@ -35,15 +53,24 @@ class FavoritesViewModel(private var dataManager:DataManager) : ViewModel(), IVi
        val d = dataManager.getFavorites()
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
-           .subscribe {
-               if(it.isNullOrEmpty())
-                   _favoriteStateLiveData.postValue(Outcome.FAILURE("you have"+
-                           " no favorites at the moment, check the \"Favorite icon\" to add an item to favorites"))
-               else{
-                   _favoriteStateLiveData.postValue(Outcome.SUCCESS(null))
-                   _favoriteDataListLiveData.postValue(it)
-               }
-           }
+            .subscribe { it:Triple<List<CryptoModel>,Int ,String?> ->
+                /*using destructuring assignment, brings back JS memories...LOL*/
+                val (data, status, message) = it
+
+                when(status){
+                    1 ->{
+                        _noNetworkState.postValue(true)
+                    }
+                    2 ->{
+                        _errorData.postValue(message)
+                        _errorState.postValue(true)
+                    }
+                    3 ->{
+                        _successData.postValue(data)
+                        _successState.postValue(true)
+                    }
+                }
+          }
 
         mSubscriptions.add(d)
     }

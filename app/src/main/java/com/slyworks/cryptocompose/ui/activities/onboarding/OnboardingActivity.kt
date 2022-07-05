@@ -4,6 +4,11 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -14,6 +19,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,7 +38,7 @@ import com.slyworks.cryptocompose.Navigator
 import com.slyworks.cryptocompose.R
 import com.slyworks.cryptocompose.appComp
 import com.slyworks.cryptocompose.ui.activities.main.MainActivity
-import com.slyworks.cryptocompose.ui.activities.onboarding.ui.theme.CryptoComposeTheme
+import com.slyworks.cryptocompose.ui.theme.CryptoComposeTheme
 import com.slyworks.cryptocompose.ui.theme.Shapes
 import javax.inject.Inject
 
@@ -78,7 +85,7 @@ class OnboardingActivity : ComponentActivity() {
            .build()
            .inject(this)
 
-        viewModel.startSequence()
+        //viewModel.startSequence()
     }
 
     @ExperimentalUnitApi
@@ -96,24 +103,24 @@ class OnboardingActivity : ComponentActivity() {
 @ExperimentalUnitApi
 @Composable
 fun OnboardingMain(viewModel: OnboardingActivityViewModel){
-    val progressState1:Float by viewModel.progressState1.observeAsState(initial = 0.1F)
+    val progressState1:Float by viewModel.progressState1.observeAsState(initial = 0.0F)
     val progressState2:Float by viewModel.progressState2.observeAsState(initial = 0.0F)
     val progressState3:Float by viewModel.progressState3.observeAsState(initial = 0.0F)
 
     val currentId:Int by viewModel.tabToTint.observeAsState(initial = 0)
 
-    val nextScreen = { viewModel.onboardingObservableNext.onNext(10L) }
-    val previousScreen = { viewModel.onboardingObservablePrevious.onNext(10L) }
+    val nextScreen = { viewModel.onboardingObservableNext.onNext(currentId + 1) }
+    val previousScreen = { viewModel.onboardingObservablePrevious.onNext(currentId - 1) }
 
-    val imageIdFunc:()-> Int = {
-        when(currentId){
-            0 -> R.drawable.onboarding_1
-            1 -> R.drawable.onboarding_2
-            2 -> R.drawable.onboarding_3
-            else -> throw UnsupportedOperationException()
-        }
+    remember("KEY"){
+        mutableStateOf(viewModel.startSequence())
     }
 
+    val textVisibilityState = remember {
+        MutableTransitionState(initialState = false).apply {
+            targetState = true
+        }
+    }
     Column(modifier = Modifier
         .systemBarsPadding()
         .padding(top = 16.dp)
@@ -123,57 +130,57 @@ fun OnboardingMain(viewModel: OnboardingActivityViewModel){
                                  progress3 = progressState3)
           OnboardingScreen(
               imageId = currentId,
-              text = "get real-time updates",
               currentId = currentId,
               nextFunc = nextScreen,
               prevFunc = previousScreen,
-              startFunc = OnboardingActivity.Companion::navigateToMainActivity,)
+              startFunc = OnboardingActivity.Companion::navigateToMainActivity)
     }
 }
 @ExperimentalUnitApi
 @Composable
 fun OnboardingScreen( imageId:Int,
-                      text:String,
                       currentId:Int,
                       nextFunc:()->Unit,
                       prevFunc:()->Unit,
                       startFunc:() -> Unit,
                       modifier: Modifier = Modifier){
+
     Column(
         modifier = modifier
     ) {
-        Image(
-            modifier = Modifier.weight(0.65F),
-            painter = rememberImagePainter(
-                data = when(imageId){
-                    0 -> R.drawable.onboarding_1
-                    1 -> R.drawable.onboarding_2
-                    2 -> R.drawable.onboarding_3
-                    else -> R.drawable.onboarding_1
-                },
-                builder = {
-                    scale(Scale.FIT)
-                }
-            ),
-            contentDescription = ""
-        )
-        Text(modifier = Modifier
-            .weight(0.2F)
-            .align(Alignment.CenterHorizontally)
-            .padding(start = 16.dp, end = 16.dp),
-            text = when(currentId){
+
+            Image(
+                modifier = Modifier.weight(0.65F),
+                painter = rememberImagePainter(
+                    data = when(imageId){
+                        0 -> R.drawable.onboarding_1
+                        1 -> R.drawable.onboarding_2
+                        2 -> R.drawable.onboarding_3
+                        else -> R.drawable.onboarding_1
+                    },
+                    builder = {
+                        scale(Scale.FIT)
+                    }
+                ),
+                contentDescription = ""
+            )
+            Text(modifier = Modifier
+                .weight(0.2F)
+                .align(Alignment.CenterHorizontally)
+                .padding(start = 16.dp, end = 16.dp),
+                text = when(currentId){
                     0 -> "Improve your business with accurate data, and latest cryptocurrency information updates"
                     1 -> "Get in-depth analysis and forecasts for your favorites cryptocurrencies"
                     2 -> "Drive up your business revenue by saving costs otherwise spent on forecasting sites, by using our services"
                     else -> "something's wrong"
-                   },
-            color = Color.Magenta,
-            textAlign = TextAlign.Center,
-            fontSize = TextUnit(20F, TextUnitType.Sp))
-
+                },
+                color = Color.Blue,
+                textAlign = TextAlign.Center,
+                fontSize = TextUnit(20F, TextUnitType.Sp))
 
         ConstraintLayout(
-            modifier = Modifier.weight(0.15F)
+            modifier = Modifier
+                .weight(0.15F)
                 .fillMaxWidth()
         ){
             val (startButton,bottomCircleTabs,endButton) = createRefs()
@@ -215,13 +222,14 @@ fun StartButtonHolder(modifier: Modifier = Modifier,
                       currentId: Int){
     if(currentId == 1 || currentId == 2){
         CryptoComposeTheme {
-            Button(
+            OutlinedButton(
                 modifier = modifier
                     .height(45.dp)
                     .wrapContentWidth()
                     .padding(2.dp),
                 onClick = onClick,
                 shape = Shapes.small,
+                border = BorderStroke(1.dp, Color.Blue)
                 ) {
 
                 Icon(
@@ -241,14 +249,15 @@ fun EndButtonHolder(modifier: Modifier = Modifier,
                     onStart:() -> Unit,
                     currentId: Int){
     if(currentId == 0 || currentId == 1){
-        CryptoComposeTheme {
-            Button(
+            OutlinedButton(
                 modifier = modifier
                     .height(45.dp)
                     .wrapContentWidth()
                     .padding(2.dp),
                 onClick = onNext,
-                shape = Shapes.small) {
+                shape = Shapes.small,
+                border = BorderStroke(1.dp, Color.Blue)
+            ) {
 
                 Text(text = "Next")
 
@@ -260,17 +269,17 @@ fun EndButtonHolder(modifier: Modifier = Modifier,
 
 
             }
-        }
     }
     if(currentId == 2){
-        CryptoComposeTheme {
-            Button(
+            OutlinedButton(
                 modifier = modifier
                     .height(45.dp)
                     .wrapContentWidth()
                     .padding(2.dp),
                 onClick = onStart,
-                shape = Shapes.small
+                shape = Shapes.small,
+                //colors = ButtonDefaults.buttonColors(backgroundColor = Color.Green)
+                border = BorderStroke(1.dp, Color.Blue)
             ) {
                 Text(text = "Start")
 
@@ -282,7 +291,6 @@ fun EndButtonHolder(modifier: Modifier = Modifier,
                 )
             }
         }
-    }
 }
 
 @Preview
@@ -305,13 +313,13 @@ fun BottomCircleTabs(modifier:Modifier = Modifier,
 fun CircleTab(shouldTint:Boolean){
     Image(modifier = Modifier
         .padding(start = 2.dp, end = 2.dp)
-        .size(8.dp),
+        .size(10.dp),
         painter = rememberImagePainter(
         data = R.drawable.circle,
     ),
         colorFilter = ColorFilter.tint(
             if(shouldTint)
-                Color.Magenta
+                Color.Blue
             else
                 Color.LightGray
         ),
@@ -328,26 +336,27 @@ fun OnboardingProgressBars(progress1:Float,
         .fillMaxWidth()
         .height(4.dp)) {
 
+
         LinearProgressIndicator(
-            modifier = Modifier.weight(0.3F)
+            modifier = Modifier
+                .weight(0.3F)
                 .fillMaxHeight(),
-            color = Color.Green,
             progress = progress1)
 
         Spacer(modifier = Modifier.weight(0.05F))
 
         LinearProgressIndicator(
-            modifier = Modifier.weight(0.3F)
+            modifier = Modifier
+                .weight(0.3F)
                 .fillMaxHeight(),
-            color = Color.Green,
             progress = progress2)
 
         Spacer(modifier = Modifier.weight(0.05F))
 
         LinearProgressIndicator(
-            modifier = Modifier.weight(0.3F)
+            modifier = Modifier
+                .weight(0.3F)
                 .fillMaxHeight(),
-            color = Color.Green,
             progress = progress3)
     }
 }

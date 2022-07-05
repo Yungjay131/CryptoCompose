@@ -1,5 +1,6 @@
 package com.slyworks.cryptocompose.ui.activities.main
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -55,7 +56,7 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
     //endregion
 
 
-    fun search(){
+    fun initSearch(){
         val d = searchObservable
             .debounce(3, TimeUnit.SECONDS)
             .switchMap { s ->
@@ -63,11 +64,11 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
                     .flatMap {
                         if(it)
                           dataManager.getSpecificCryptocurrency(s)
-                              .flatMap {
-                                  if(it == null)
+                              .flatMap { it2 : CryptoModelCombo ->
+                                  if(it2.details == null)
                                       Observable.just(Outcome.FAILURE(value = "no results for query found"))
                                   else
-                                      Observable.just(Outcome.SUCCESS(it))
+                                      Observable.just(Outcome.SUCCESS(it2))
                               }
                         else
                            Observable.just(Outcome.ERROR(value = "no internet connection"))
@@ -75,7 +76,7 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
             }
             .observeOn(Schedulers.io())
             .subscribeOn(Schedulers.io())
-            .subscribe {
+            .subscribe({
                 progressState.postValue(false)
 
                 when{
@@ -92,7 +93,12 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
                         _errorState.postValue(true)
                     }
                 }
-            }
+            },{
+                Log.e(TAG, "initSearch: error occurred", it)
+                _errorData.postValue("an error occurred while processing your request")
+                _errorState.postValue(true)
+
+            })
 
         mSubscriptions.add(d)
     }

@@ -15,52 +15,70 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
 
     //region Vars
     private val TAG: String? = ApiRepositoryImpl::class.simpleName
+
+    private lateinit var mFavoritesList:List<Int>
     //endregion
 
-
     override fun getData():Single<List<CryptoModel>> =
-        mInstance.getCryptoInformation()
-                 .map(::mapResponseToCryptoModel2)
-                 .doOnError {
-                     Log.e(TAG, "getData: error occurred", it )
-                 }
+        getDataWithFavorites(emptyList())
 
-    override fun getMultipleCryptoInformation(ids: String): Single<CryptoModel> =
-        mInstance.getMultipleCryptoInformation(ids)
-                 .map{ it.data.first() }
-                 .map(::mapResponseToCryptoModel2)
+    override fun getDataWithFavorites(favorites: List<Int>): Single<List<CryptoModel>> {
+        mFavoritesList = favorites
+
+        return mInstance.getCryptoInformation()
+            .map(::mapResponseToCryptoModel3)
+            .doOnError {
+                Log.e(TAG, "getData: error occurred", it)
+            }
+    }
+
+    override fun getMultipleCryptoInformation(ids: String, favoritesList:List<Int>): Single<List<CryptoModel>> {
+        mFavoritesList = favoritesList
+
+        return mInstance.getCryptoInformation(ids)
+            .map(::mapResponseToCryptoModel2)
+            .doOnError {
+                Log.e(TAG, "getMultipleCryptoInformation: error occurred", it)
+            }
+    }
 
     override fun getSpecificCryptocurrency(query: String): Single<CryptoModelDetails> =
         mInstance.getSpecificCryptoInformation(query)
+                 .map{
+                     val index:Int = it.keyList.first()
+                     val entity:CryptoEntity5.CryptoCurrency5 = it.data.get(index)!!
+                     return@map entity
+                 }
                  .map(::mapResponseToCryptoModelDetails)
                  .doOnError {
                      Log.e(TAG, "getSpecificCryptoCurrency: error occurred", it )
                  }
 
 
-    private fun mapResponseToCryptoModelDetails(entity:CryptoEntity2):CryptoModelDetails {
+    private fun mapResponseToCryptoModelDetails(entity: CryptoEntity5.CryptoCurrency5):CryptoModelDetails {
         return CryptoModelDetails(
-            id = entity.data.one.id,
-            name = entity.data.one.name,
-            symbol = entity.data.one.symbol,
-            category = entity.data.one.category,
-            description = entity.data.one.description,
-            slug = entity.data.one.slug,
-            logo = entity.data.one.logo,
-            tags = entity.data.one.tags,
-            dateAdded = entity.data.one.dateAdded )
+            id = entity.id,
+            name = entity.name,
+            symbol = entity.symbol,
+            category = entity.category,
+            description = entity.description,
+            slug = entity.slug,
+            logo = entity.logo,
+            tags = entity.tags ?: emptyList(),
+            dateAdded = entity.dateAdded )
     }
 
-    private fun mapResponseToCryptoModel2(ce:CryptoEntity3):List<CryptoModel>{
+    private fun mapResponseToCryptoModel3(ce:CryptoEntity3):List<CryptoModel>{
         return with(mutableListOf<CryptoModel>()){
-            ce.data.forEach { c ->
-                add(mapResponseToCryptoModel2(c))
+            ce.data.forEach { c:CryptoEntity3.CryptoCurrency3 ->
+                add(mapResponseToCryptoModel3Single(c))
             }
             this
         }
     }
 
-    private fun mapResponseToCryptoModel2(c:CryptoEntity3.CryptoCurrency3):CryptoModel{
+
+    private fun mapResponseToCryptoModel3Single(c:CryptoEntity3.CryptoCurrency3):CryptoModel{
         return CryptoModel(
             _id = c._id,
             image = parseImageString(c._id),
@@ -75,16 +93,54 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
             priceUnit = "₦",
             marketCap = c.quote.ngn.marketCap.parseDouble(),
             dateAdded = c.dateAdded,
-            tags = parseTagsString(c.tags) )
+            tags = parseTagsString(c.tags),
+            isFavorite = mFavoritesList.contains(c._id))
     }
 
-    private fun Double?.parseDouble():Double =
-          if(this == null) 0.00
-          else
-              DecimalFormat("0.00")
-                  .format(this)
-                  .toDouble()
+ private fun mapResponseToCryptoModel2(ce:CryptoEntity4):List<CryptoModel>{
+        return with(mutableListOf<CryptoModel>()){
+            ce.data.forEach { c ->
+                add(mapResponseToCryptoModel2Single(c.value))
+            }
+            this
+        }
+    }
 
+    private fun mapResponseToCryptoModel2Single(c:CryptoEntity4.CryptoCurrency4):CryptoModel{
+        return CryptoModel(
+            _id = c.id,
+            image = parseImageString(c.id),
+            symbol = c.symbol,
+            name = c.name,
+            maxSupply = c.maxSupply.parseDouble(),
+            circulatingSupply = c.circulatingSupply.parseDouble(),
+            totalSupply = c.totalSupply.parseDouble(),
+            cmcRank = c.cmcRank,
+            lastUpdated = c.lastUpdated,
+            price = c.quote.nGN.price,
+            priceUnit = "₦",
+            marketCap = c.quote.nGN.marketCap.parseDouble(),
+            dateAdded = c.dateAdded,
+            tags = parseTagsString(c.tags),
+            isFavorite = mFavoritesList.contains(c.id))
+    }
+
+
+    private fun Double?.parseDouble():Double {
+        return if(this == null) 0.00
+            else{
+               String.format("%.2f", this)
+                   .toDouble()
+           }
+    }
+
+    private fun Double?.parseDouble2():Double {
+        return if (this == null) 0.00
+        else
+            DecimalFormat("0.00")
+                .format(this)
+                .toDouble()
+    }
 
     private fun parseImageString(entityID:Int?):String = String.format(CRYPTO_URL_PATH, entityID)
     private fun parseTagsString(tags: List<String>?):String{

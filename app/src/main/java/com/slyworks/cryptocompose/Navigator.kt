@@ -59,11 +59,8 @@ class Navigator {
     }
 
     companion object {
-        var continuation: NavContinuation? = null
-
         inline fun <reified T: Activity> intentFor(from: Context): NavContinuation {
-            continuation = NavContinuation(Intent(from, T::class.java), from as Activity)
-            return continuation!!
+            return NavContinuation(Intent(from, T::class.java), from as Activity)
         }
 
         inline fun <reified T> Intent.getExtra(key:String):T{

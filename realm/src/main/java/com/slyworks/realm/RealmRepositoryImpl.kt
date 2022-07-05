@@ -33,6 +33,7 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                 cmcRank = model.cmcRank,
                 lastUpdated = model.lastUpdated,
                 price = model.price,
+                priceUnit = model.priceUnit,
                 marketCap = model.marketCap ?: 0.0,
                 dateAdded = model.dateAdded,
                 tags = model.tags,
@@ -98,9 +99,8 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
             Realm.getInstance(config)
                 .executeTransaction(Realm.Transaction {
                 val l:List<CryptoModelID> = it.where(CryptoModelID::class.java)
-                    .equalTo("isFavorite", true)
                     .findAll()
-                    .sort("name", Sort.ASCENDING)
+                    .sort("id", Sort.ASCENDING)
 
                 val r:List<Int> = l.map { it2 -> it2.id }
                 emitter.onSuccess(r)
@@ -118,9 +118,7 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
 
                  Realm.getInstance(config)
                      .executeTransaction {
-                    l.forEach { i ->
-                       it.insertOrUpdate(i)
-                    }
+                      it.insertOrUpdate(l)
 
                     emitter.onComplete()
                 }
@@ -145,10 +143,13 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                         it.where(CryptoModelID::class.java)
                             .equalTo("id", i.id)
                             .findFirst()
+                            ?.deleteFromRealm()
                     }
 
-                    emitter.onComplete()
+                   emitter.onComplete()
                 }
+
+
             } catch (e: Exception) {
                 Log.e(TAG, "removeFromFavorites: error occurred", e)
                 emitter.onError(e)

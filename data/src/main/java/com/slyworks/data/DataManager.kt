@@ -8,7 +8,6 @@ import com.slyworks.repository.ApiRepository
 import com.slyworks.repository.RealmRepository
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.core.ObservableSource
 import java.util.concurrent.TimeUnit
 
 
@@ -29,20 +28,28 @@ constructor(private val mNetworkRegister:NetworkRegister,
             Observable.just(mNetworkRegister.getNetworkStatus()),
             mNetworkRegister.subscribeToNetworkUpdates())
 
-    fun getSpecificCryptocurrency(query:String):Observable<CryptoModelCombo?>
+    fun getSpecificCryptocurrency(query:String):Observable<CryptoModelCombo>
+    /*TODO:maybe use zip() here*/
        = mRepo1.getSpecificCryptocurrency(query)
             .toObservable()
             .flatMap { c ->
                 if(c != null)
                     /*means there was a error, probably doesn't exist*/
-                    Observable.just<CryptoModelCombo>(null)
+                    Observable.just<CryptoModelCombo>(CryptoModelCombo.empty())
                 else{
                     /*means it exist hence get associated data*/
                     Observable.combineLatest(
                         Observable.just<CryptoModelDetails>(c),
-                        mRepo1.getMultipleCryptoInformation(query)
-                              .toObservable(),
-                        { details: CryptoModelDetails, model: CryptoModel ->
+                        mRepo2.getFavorites()
+                              .toObservable()
+                              .flatMap { it:List<Int> ->
+                                  mRepo1.getMultipleCryptoInformation(query, it)
+                                      .toObservable()
+                                      .map { it2:List<CryptoModel> ->
+                                          it2.first()
+                                      }
+                              },
+                        { details:CryptoModelDetails, model:CryptoModel ->
                             CryptoModelCombo(
                                 model = model,
                                 details = details)
@@ -64,12 +71,17 @@ constructor(private val mNetworkRegister:NetworkRegister,
                         Observable.interval(10, TimeUnit.MINUTES)
                         )
                         .flatMap { _ ->
-                            mRepo1.getData()
-                                  .toObservable()
-                                  .flatMap { l ->
-                                     mRepo2.saveData(l)
-                                           .andThen(Observable.just(l))
-                                  }
+                            mRepo2.getFavorites()
+                                .toObservable()
+                                .flatMap { it2:List<Int> ->
+                                    mRepo1.getDataWithFavorites(it2)
+                                        .toObservable()
+                                        .flatMap { l:List<CryptoModel> ->
+                                            mRepo2.saveData(l)
+                                                .andThen(Observable.just(l))
+                                        }
+                                }
+
                         }
                 }else{
                     mRepo2.getData()
@@ -90,17 +102,29 @@ constructor(private val mNetworkRegister:NetworkRegister,
     =  mRepo2.removeFromFavorites(*data)
 
 
-    fun getFavorites(): Observable<List<CryptoModel>>
+    fun getFavorites(): Observable<Triple<List<CryptoModel>,Int, String?>>
     =  Observable.merge(
                  Observable.just(mNetworkRegister.getNetworkStatus()),
                  mNetworkRegister.subscribeToNetworkUpdates()
               ).flatMap {
                       if(!it)
-                       Observable.just(emptyList<CryptoModel>())
+                         Observable.just(
+                             Triple(
+                             emptyList<CryptoModel>(), 1,"you are currently not connected to the internet."+
+                                     " Please check your connection and try again")
+                         )
                       else
                           mRepo2.getFavorites()
                               .toObservable()
-                              .map { it2 ->
+                              .flatMap flatMap2@{ it2:List<Int> ->
+                                  if(it2.isNullOrEmpty())
+                                      return@flatMap2 Observable.just(
+                                          Triple(
+                                          emptyList<CryptoModel>() ,2,"you have no favorites at the moment."+
+                                          "Check the \"Favorite\" icon to add an item to your Favorites")
+                                      )
+
+
                                   val s:StringBuilder = StringBuilder()
                                   for(i in it2.indices){
                                       if(i != it2.size - 1)
@@ -109,12 +133,13 @@ constructor(private val mNetworkRegister:NetworkRegister,
                                           s.append("$i")
                                   }
 
-                                  s.toString()
+                                  mRepo1.getMultipleCryptoInformation(s.toString(), it2)
+                                      .toObservable()
+                                      .flatMap { it4:List<CryptoModel> ->
+                                          Observable.just(Triple(it4 ,3, "successful"))
+                                      }
                               }
-                              .flatMap {
-                                  mRepo1.getData()
-                                        .toObservable()
-                              }
+
               }
 
 

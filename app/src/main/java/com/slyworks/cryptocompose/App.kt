@@ -16,6 +16,7 @@ import com.slyworks.cryptocompose.di.DaggerApplicationComponent
 import com.slyworks.models.Conf
 import io.realm.Realm
 import io.realm.RealmConfiguration
+import timber.log.Timber
 
 
 /**
@@ -36,8 +37,9 @@ class App : Application(), ImageLoaderFactory{
         val imageRequest:ImageRequest.Builder.() -> Unit = {
             memoryCachePolicy(CachePolicy.ENABLED)
             diskCachePolicy(CachePolicy.ENABLED)
-            scale(Scale.FILL)
+            scale(Scale.FIT)
             placeholder(R.drawable.ic_placeholder)
+            error(R.drawable.ic_placeholder)
             transformations(CircleCropTransformation())
         }
     }
@@ -70,6 +72,16 @@ class App : Application(), ImageLoaderFactory{
               inject(this@App)
             }
 
+
+        /*init Logger, its an api dependency in :repository*/
+        Timber.plant(object: Timber.DebugTree(){
+            override fun createStackElementTag(element: StackTraceElement): String? {
+                return String.format(
+                    "%s:%s",
+                    super.createStackElementTag(element))
+            }
+        })
+        Timber.d("app created")
     }
 
 }

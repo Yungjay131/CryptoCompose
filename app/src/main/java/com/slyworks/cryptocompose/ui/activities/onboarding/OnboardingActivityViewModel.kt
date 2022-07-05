@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
@@ -33,74 +34,101 @@ class OnboardingActivityViewModel : ViewModel() {
     val tabToTint:LiveData<Int>
     get() = _tabToTint
 
-    val onboardingObservableNext:PublishSubject<Long> = PublishSubject.create()
-    val onboardingObservablePrevious:PublishSubject<Long> = PublishSubject.create()
+    val onboardingObservableNext:PublishSubject<Int> = PublishSubject.create()
+    val onboardingObservablePrevious:PublishSubject<Int> = PublishSubject.create()
+
+    private val mO:PublishSubject<Int> = PublishSubject.create()
+
+    private var d1:Disposable = Disposable.empty()
+    private var d2:Disposable = Disposable.empty()
+    private var d3:Disposable = Disposable.empty()
+
+    private val mSubscriptions:CompositeDisposable = CompositeDisposable()
     //endregion
 
     fun startSequence(){
-        var count:Long = 0
+        val d =
+            Observable.merge(
+               onboardingObservableNext,
+               onboardingObservablePrevious,
+               mO,
+               Observable.just(0)
+            )
+           .subscribeOn(Schedulers.io())
+           .observeOn(Schedulers.io())
+           .subscribe {
+               when(it){
+                   0 ->{
+                       _tabToTint.postValue(0)
+                          d2.dispose()
+                          d3.dispose()
+                       _progressState1.postValue(0.0F)
+                       _progressState2.postValue(0.0F)
+                       _progressState3.postValue(0.0F)
+                       startSequence1()
+                   }
+                   1 -> {
+                       _tabToTint.postValue(1)
+                          d1.dispose()
+                          d3.dispose()
+                       _progressState1.postValue(1.0F)
+                       _progressState2.postValue(0.0F)
+                       _progressState3.postValue(0.0F)
+                       startSequence2()
+                   }
+                   2 -> {
+                       _tabToTint.postValue(2)
+                          d1.dispose()
+                          d2.dispose()
+                       _progressState1.postValue(1.0F)
+                       _progressState2.postValue(1.0F)
+                       _progressState3.postValue(0.0F)
+                       startSequence3()
+                   }
+               }
+           }
 
-        Observable.merge(
-            onboardingObservableNext
-                .flatMap {
-                    count += 1L
-                    Observable.just(count)
-                         },
-            onboardingObservablePrevious
-                .flatMap {
-                    count -= 1L
-                    Observable.just(count)
-                         },
-            Observable.interval(3L, TimeUnit.SECONDS)
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .flatMap {
-                    count += 1L
-                    Flowable.just<Long>(count)
-                }
-                .toObservable()
-             )
-            .switchMap {
-                /*trying to unsubscribe to old input and subscribe to new ones???*/
-                Observable.just(it)
-            }
+        mSubscriptions.add(d)
+    }
+
+    private fun startSequence1() {
+        d1 = Observable.interval(50L, TimeUnit.MILLISECONDS)
+            .toFlowable(BackpressureStrategy.BUFFER)
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
             .subscribe {
-                when{
-                    count in 1L..10L ->{
-                        if(_tabToTint.value != 0)
-                           _tabToTint.postValue(0)
-
-                        if(_progressState1.value!! >= 1.0)
-                            //means its from back button
-                            _progressState1.postValue(0.0F)
-
-
-                        val v = _progressState1.value!! + .1F
-                        _progressState1.postValue(v)
-                    }
-                    count in 11L..20L ->{
-                        if(_tabToTint.value != 1)
-                           _tabToTint.postValue(1)
-
-                        if(_progressState2.value!! >= 1.0)
-                            _progressState2.postValue(0.0F)
-
-                        val v = _progressState2.value!! + .1F
-                        _progressState2.postValue(v)
-                    }
-                    count in 21L..30L ->{
-                        if(_tabToTint.value != 0)
-                            _tabToTint.postValue(2)
-
-                        if(_progressState3.value!! >= 1.0)
-                            _progressState3.postValue(0.0F)
-
-                        val v = _progressState3.value!! + .1F
-                        _progressState3.postValue(v)
-                    }
-                }
+                if (_progressState1.value!! < 1.0F)
+                    _progressState1.postValue(_progressState1.value!! + .01F)
+                else
+                    mO.onNext(1)
             }
     }
 
+    private fun startSequence2() {
+        d2 = Observable.interval(50L, TimeUnit.MILLISECONDS)
+            .toFlowable(BackpressureStrategy.BUFFER)
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .subscribe {
+                if (_progressState2.value!! < 1.0F)
+                    _progressState2.postValue(_progressState2.value!! + .01F)
+                else
+                    mO.onNext(2)
+            }
+    }
+
+    private fun startSequence3(){
+        d3 = Observable.interval(150L, TimeUnit.MILLISECONDS)
+             .toFlowable(BackpressureStrategy.BUFFER)
+             .subscribeOn(Schedulers.io())
+             .observeOn(Schedulers.io())
+             .subscribe {
+                 if(_progressState3.value!! < 1.0F)
+                     _progressState3.postValue(_progressState3.value!! + .01F)
+             }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+    }
 }
