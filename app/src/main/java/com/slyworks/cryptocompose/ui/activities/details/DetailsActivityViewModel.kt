@@ -1,6 +1,5 @@
 package com.slyworks.cryptocompose.ui.activities.details
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -11,6 +10,7 @@ import com.slyworks.models.Outcome
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import timber.log.Timber
 
 
 /**
@@ -54,7 +54,7 @@ class DetailsActivityViewModel(private var dataManager: DataManager) : ViewModel
                     _detailsStateLiveData.postValue(Outcome.FAILURE(value = 1, reason="no results found for search query"))
                 }
             },{
-                Log.e(TAG, "DetailsViewModel#getData: error occurred getting cryptoDetails", )
+                Timber.e("DetailsViewModel#getData: error occurred getting cryptoDetails")
                 _detailsStateLiveData.postValue(Outcome.FAILURE(value = 2,reason = "an error occurred while processing your request"))
             })
 

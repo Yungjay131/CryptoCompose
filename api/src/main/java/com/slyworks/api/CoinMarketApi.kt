@@ -24,21 +24,20 @@ interface CoinMarketApi {
 
     @Headers("X-CMC_PRO_API_KEY:$API_KEY")
     @GET("/v1/cryptocurrency/listings/latest")
-    fun getCryptoInformation(@Query("start") start:Int = 1,
-                             @Query("limit") limit: Int = 100,
-                             @Query("convert") currency: String = "NGN")
-    : Single<CryptoEntity3>
+    fun getAllCryptoCurrencyInformation(@Query("start") start:Int = 1,
+                                        @Query("limit") limit: Int = 100,
+                                        @Query("convert") currency: String = "NGN")
+    : Single<CryptoEntityGeneral>
 
     @Headers("X-CMC_PRO_API_KEY:$API_KEY")
     @GET("/v1/cryptocurrency/info")
-    fun getSpecificCryptoInformation(@Query("slug") query:String)
-    : Single<CryptoEntity5>
+    fun getSpecificCryptoCurrencyInformation(@Query("slug") query:String)
+    : Single<CryptoEntityDetails>
 
     @Headers("X-CMC_PRO_API_KEY:$API_KEY")
     @GET("/v1/cryptocurrency/quotes/latest")
-    fun getCryptoInformation(@Query("id") ids:String,
-                             @Query("convert") currency: String = "NGN")
-    : Single<CryptoEntity4>
-
+    fun getMultipleCryptoCurrencyInformation(@Query("id") ids:String,
+                                        @Query("convert") currency: String = "NGN")
+    : Single<CryptoEntityMultiple>
 }
 

@@ -40,9 +40,9 @@ class NetworkWatcherImpl(private var context:Context?) : NetworkWatcher {
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun getNetworkStatus(): Boolean {
-        val network: Network? = mCm.activeNetwork ?: return false
-        val capabilities = mCm.getNetworkCapabilities(network)
-        return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        val network: Network = mCm.activeNetwork ?: return false
+        val capabilities:NetworkCapabilities = mCm.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     @SuppressLint("NewApi")
@@ -50,7 +50,7 @@ class NetworkWatcherImpl(private var context:Context?) : NetworkWatcher {
         mConnectivityCallback = ConnectivityCallback(mO!!)
         mCm.registerNetworkCallback(mNetworkRequest!!, mConnectivityCallback!!)
 
-        return mO!!
+        return mO!!.startWithItem(getNetworkStatus())
     }
 
     override fun unsubscribeTo() {

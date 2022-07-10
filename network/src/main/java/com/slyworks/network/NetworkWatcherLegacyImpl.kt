@@ -40,10 +40,8 @@ class NetworkWatcherLegacyImpl(private var context:Context?): NetworkWatcher {
     override fun subscribeTo(): Observable<Boolean> {
         mConnectivityCallback = ConnectivityCallback(mO)
         mCm.registerNetworkCallback(mNetworkRequest!!, mConnectivityCallback!!)
-        return mO!!.hide()
-            .doOnSubscribe {
-                mO!!.onNext(getNetworkStatus())
-            }
+
+        return mO!!.startWithItem(getNetworkStatus())
     }
 
     override fun unsubscribeTo() {

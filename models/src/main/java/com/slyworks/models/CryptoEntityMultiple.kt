@@ -3,11 +3,11 @@ package com.slyworks.models
 
 import com.google.gson.annotations.SerializedName
 
-data class CryptoEntity4(
+data class CryptoEntityMultiple(
     @SerializedName("status")
     val status: Status,
     @SerializedName("data")
-    val data: Map<Int,CryptoCurrency4>
+    val data: Map<Int,CryptoCurrencyMultiple>
 ) {
     val keyList:List<Int>
     get() = data.keys.toList()
@@ -27,7 +27,7 @@ data class CryptoEntity4(
         val timestamp: String
     )
 
-    data class CryptoCurrency4(
+    data class CryptoCurrencyMultiple(
         @SerializedName("circulating_supply")
         val circulatingSupply: Double,
         @SerializedName("cmc_rank")

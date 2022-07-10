@@ -3,16 +3,31 @@ package com.slyworks.models
 
 import com.google.gson.annotations.SerializedName
 
-data class CryptoEntity5(
-    @SerializedName("data")
-    val data: Map<Int,CryptoCurrency5>,
+data class CryptoEntityDetails(
     @SerializedName("status")
-    val status: Status
+    val status: Status,
+    @SerializedName("data")
+    val data: Map<Int, CryptoCurrencyDetails>
 ) {
     val keyList:List<Int>
         get() = data.keys.toList()
 
-    data class CryptoCurrency5(
+    data class Status(
+        @SerializedName("credit_count")
+        val creditCount: Int,
+        @SerializedName("elapsed")
+        val elapsed: Int,
+        @SerializedName("error_code")
+        val errorCode: Int,
+        @SerializedName("error_message")
+        val errorMessage: String?,
+        @SerializedName("notice")
+        val notice: String?,
+        @SerializedName("timestamp")
+        val timestamp: String
+    )
+
+    data class CryptoCurrencyDetails(
         @SerializedName("category")
         val category: String,
         @SerializedName("contract_address")
@@ -82,18 +97,5 @@ data class CryptoEntity5(
         )
     }
 
-    data class Status(
-        @SerializedName("credit_count")
-        val creditCount: Int,
-        @SerializedName("elapsed")
-        val elapsed: Int,
-        @SerializedName("error_code")
-        val errorCode: Int,
-        @SerializedName("error_message")
-        val errorMessage: Any?,
-        @SerializedName("notice")
-        val notice: Any?,
-        @SerializedName("timestamp")
-        val timestamp: String
-    )
+
 }

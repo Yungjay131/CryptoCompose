@@ -73,15 +73,15 @@ class App : Application(), ImageLoaderFactory{
             }
 
 
-        /*init Logger, its an api dependency in :repository*/
+        /*init Timber logger, its an api dependency in :repository*/
         Timber.plant(object: Timber.DebugTree(){
             override fun createStackElementTag(element: StackTraceElement): String? {
                 return String.format(
-                    "%s:%s",
+                    "%s:",
                     super.createStackElementTag(element))
             }
         })
-        Timber.d("app created")
+        Timber.e("app created")
     }
 
 }

@@ -1,6 +1,5 @@
 package com.slyworks.realm
 
-import android.util.Log
 import com.slyworks.models.CryptoModel
 import com.slyworks.repository.RealmRepository
 import io.reactivex.rxjava3.core.Completable
@@ -9,6 +8,7 @@ import io.reactivex.rxjava3.core.Single
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.Sort
+import timber.log.Timber
 
 
 /**
@@ -88,7 +88,7 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                     emitter.onComplete()
                 })
             } catch (e: Exception) {
-                Log.e(TAG, "saveData: error occurred", e)
+                Timber.e(e, "saveData: error occurred")
                 emitter.onError(e)
             }
         }
@@ -123,7 +123,7 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                     emitter.onComplete()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "addToFavorites: error occurred", e)
+                Timber.e("addToFavorites: error occurred")
                 emitter.onError(e)
             }
         }
@@ -151,7 +151,7 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
 
 
             } catch (e: Exception) {
-                Log.e(TAG, "removeFromFavorites: error occurred", e)
+                Timber.e("removeFromFavorites: error occurred")
                 emitter.onError(e)
             }
         }

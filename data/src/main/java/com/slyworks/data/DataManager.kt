@@ -30,7 +30,7 @@ constructor(private val mNetworkRegister:NetworkRegister,
 
     fun getSpecificCryptocurrency(query:String):Observable<CryptoModelCombo>
     /*TODO:maybe use zip() here*/
-       = mRepo1.getSpecificCryptocurrency(query)
+       = mRepo1.getSpecificCryptoInfoMappedWithFavorites(query)
             .toObservable()
             .flatMap { c ->
                 if(c != null)
@@ -43,7 +43,7 @@ constructor(private val mNetworkRegister:NetworkRegister,
                         mRepo2.getFavorites()
                               .toObservable()
                               .flatMap { it:List<Int> ->
-                                  mRepo1.getMultipleCryptoInformation(query, it)
+                                  mRepo1.getMultipleCryptoInfoMappedWithFavorites(query, it)
                                       .toObservable()
                                       .map { it2:List<CryptoModel> ->
                                           it2.first()
@@ -59,11 +59,9 @@ constructor(private val mNetworkRegister:NetworkRegister,
             }
 
 
-    fun getData(): Observable<List<CryptoModel>> {
-        return Observable.merge(
-            Observable.just(mNetworkRegister.getNetworkStatus()),
-            mNetworkRegister.subscribeToNetworkUpdates()
-        ).flatMap {
+    fun getData(): Observable<List<CryptoModel>>  =
+        mNetworkRegister.subscribeToNetworkUpdates()
+          .flatMap {
                 if(it) {
                     /*make the network call every 10 minutes*/
                     Observable.merge(
@@ -74,7 +72,7 @@ constructor(private val mNetworkRegister:NetworkRegister,
                             mRepo2.getFavorites()
                                 .toObservable()
                                 .flatMap { it2:List<Int> ->
-                                    mRepo1.getDataWithFavorites(it2)
+                                    mRepo1.getAllCryptoInfoMappedWithFavorites(it2)
                                         .toObservable()
                                         .flatMap { l:List<CryptoModel> ->
                                             mRepo2.saveData(l)
@@ -91,7 +89,6 @@ constructor(private val mNetworkRegister:NetworkRegister,
             }
 
 
-    }
 
 
     fun addToFavorites(vararg data:Int):Completable
@@ -133,7 +130,7 @@ constructor(private val mNetworkRegister:NetworkRegister,
                                           s.append("$i")
                                   }
 
-                                  mRepo1.getMultipleCryptoInformation(s.toString(), it2)
+                                  mRepo1.getMultipleCryptoInfoMappedWithFavorites(s.toString(), it2)
                                       .toObservable()
                                       .flatMap { it4:List<CryptoModel> ->
                                           Observable.just(Triple(it4 ,3, "successful"))

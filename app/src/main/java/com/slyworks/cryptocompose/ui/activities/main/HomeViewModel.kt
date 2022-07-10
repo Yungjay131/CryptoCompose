@@ -1,6 +1,5 @@
 package com.slyworks.cryptocompose.ui.activities.main
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -12,6 +11,7 @@ import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import timber.log.Timber
 
 
 /**
@@ -48,7 +48,7 @@ class HomeViewModel(private var dataManager: DataManager) : ViewModel(), IViewMo
                     }
                 },
                 {
-                    Log.e(TAG, "getData: error occurred", it)
+                    Timber.e(it,"getData: error occurred")
                     _homeStateLiveData.postValue(Outcome.FAILURE("an error occurred while processing your request"))
                 }
             )

@@ -1,6 +1,5 @@
 package com.slyworks.cryptocompose.ui.activities.main
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -13,6 +12,7 @@ import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
 
@@ -94,7 +94,7 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
                     }
                 }
             },{
-                Log.e(TAG, "initSearch: error occurred", it)
+                Timber.e(it, "initSearch: error occurred")
                 _errorData.postValue("an error occurred while processing your request")
                 _errorState.postValue(true)
 

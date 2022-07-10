@@ -1,10 +1,10 @@
 package com.slyworks.api
 
-import android.util.Log
 import com.slyworks.api.CoinMarketApi.Companion.CRYPTO_URL_PATH
 import com.slyworks.models.*
 import com.slyworks.repository.ApiRepository
 import io.reactivex.rxjava3.core.Single
+import timber.log.Timber
 import java.text.DecimalFormat
 
 
@@ -20,111 +20,102 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
     //endregion
 
     override fun getData():Single<List<CryptoModel>> =
-        getDataWithFavorites(emptyList())
+        getAllCryptoInfoMappedWithFavorites(emptyList())
 
-    override fun getDataWithFavorites(favorites: List<Int>): Single<List<CryptoModel>> {
+    override fun getAllCryptoInfoMappedWithFavorites(favorites: List<Int>): Single<List<CryptoModel>> {
         mFavoritesList = favorites
 
-        return mInstance.getCryptoInformation()
-            .map(::mapResponseToCryptoModel3)
+        return mInstance.getAllCryptoCurrencyInformation()
+            .map{
+                val l = mutableListOf<CryptoModel>()
+
+                it.data.forEach { e:CryptoEntityGeneral.CryptoCurrencyGeneral ->
+                    val model:CryptoModel = CryptoModel(
+                        _id = e._id,
+                        image = parseImageString(e._id),
+                        symbol = e.symbol,
+                        name = e.name,
+                        maxSupply = e.maxSupply.parseDouble(),
+                        circulatingSupply = e.circulatingSupply.parseDouble(),
+                        totalSupply = e.totalSupply.parseDouble(),
+                        cmcRank = e.cmcRank,
+                        lastUpdated = e.lastUpdated,
+                        price = e.quote.ngn.price,
+                        priceUnit = "",
+                        marketCap = e.quote.ngn.marketCap.parseDouble(),
+                        dateAdded = e.dateAdded,
+                        tags = parseTagsString(e.tags),
+                        isFavorite = mFavoritesList.contains(e._id)
+                    )
+
+                    l.add(model)
+                }
+
+                return@map l as List<CryptoModel>
+            }
             .doOnError {
-                Log.e(TAG, "getData: error occurred", it)
+                Timber.e(it, "getData: error occurred")
             }
     }
 
-    override fun getMultipleCryptoInformation(ids: String, favoritesList:List<Int>): Single<List<CryptoModel>> {
+    override fun getMultipleCryptoInfoMappedWithFavorites(ids: String, favoritesList:List<Int>): Single<List<CryptoModel>> {
         mFavoritesList = favoritesList
 
-        return mInstance.getCryptoInformation(ids)
-            .map(::mapResponseToCryptoModel2)
+        return mInstance.getMultipleCryptoCurrencyInformation(ids)
+            .map{
+                val l = mutableListOf<CryptoModel>()
+
+                it.keyList.forEach { i ->
+                    val e:CryptoEntityMultiple.CryptoCurrencyMultiple = it.data.get(i)!!
+                    val model:CryptoModel = CryptoModel(
+                        _id = e.id,
+                        image = parseImageString(e.id),
+                        symbol = e.symbol,
+                        name = e.name,
+                        maxSupply = e.maxSupply.parseDouble(),
+                        circulatingSupply = e.circulatingSupply.parseDouble(),
+                        totalSupply = e.totalSupply.parseDouble(),
+                        cmcRank = e.cmcRank,
+                        lastUpdated = e.lastUpdated,
+                        price = e.quote.nGN.price,
+                        priceUnit = "",
+                        marketCap = e.quote.nGN.marketCap.parseDouble(),
+                        dateAdded = e.dateAdded,
+                        tags = parseTagsString(e.tags),
+                        isFavorite = mFavoritesList.contains(e.id)
+                    )
+                }
+
+                return@map l as List<CryptoModel>
+            }
             .doOnError {
-                Log.e(TAG, "getMultipleCryptoInformation: error occurred", it)
+                Timber.e(it, "getMultipleCryptoInformation: error occurred")
             }
     }
 
-    override fun getSpecificCryptocurrency(query: String): Single<CryptoModelDetails> =
-        mInstance.getSpecificCryptoInformation(query)
+    override fun getSpecificCryptoInfoMappedWithFavorites(query: String): Single<CryptoModelDetails> =
+        mInstance.getSpecificCryptoCurrencyInformation(query)
+                 .map {
+                     val index: Int = it.keyList.first()
+
+                     /*this returns CryptoCurrencyDetails*/
+                     return@map it.data.get(index)!!
+                 }
                  .map{
-                     val index:Int = it.keyList.first()
-                     val entity:CryptoEntity5.CryptoCurrency5 = it.data.get(index)!!
-                     return@map entity
+                     return@map CryptoModelDetails(
+                         id = it.id,
+                         name = it.name,
+                         symbol = it.symbol,
+                         category = it.category,
+                         description = it.description,
+                         slug = it.slug,
+                         logo = it.logo,
+                         tags = it.tags!!,
+                         dateAdded = it.dateAdded)
                  }
-                 .map(::mapResponseToCryptoModelDetails)
                  .doOnError {
-                     Log.e(TAG, "getSpecificCryptoCurrency: error occurred", it )
+                     Timber.e(it, "getSpecificCryptoCurrency: error occurred" )
                  }
-
-
-    private fun mapResponseToCryptoModelDetails(entity: CryptoEntity5.CryptoCurrency5):CryptoModelDetails {
-        return CryptoModelDetails(
-            id = entity.id,
-            name = entity.name,
-            symbol = entity.symbol,
-            category = entity.category,
-            description = entity.description,
-            slug = entity.slug,
-            logo = entity.logo,
-            tags = entity.tags ?: emptyList(),
-            dateAdded = entity.dateAdded )
-    }
-
-    private fun mapResponseToCryptoModel3(ce:CryptoEntity3):List<CryptoModel>{
-        return with(mutableListOf<CryptoModel>()){
-            ce.data.forEach { c:CryptoEntity3.CryptoCurrency3 ->
-                add(mapResponseToCryptoModel3Single(c))
-            }
-            this
-        }
-    }
-
-
-    private fun mapResponseToCryptoModel3Single(c:CryptoEntity3.CryptoCurrency3):CryptoModel{
-        return CryptoModel(
-            _id = c._id,
-            image = parseImageString(c._id),
-            symbol = c.symbol,
-            name = c.name,
-            maxSupply = c.maxSupply.parseDouble(),
-            circulatingSupply = c.circulatingSupply.parseDouble(),
-            totalSupply = c.totalSupply.parseDouble(),
-            cmcRank = c.cmcRank,
-            lastUpdated = c.lastUpdated,
-            price = c.quote.ngn.price,
-            priceUnit = "₦",
-            marketCap = c.quote.ngn.marketCap.parseDouble(),
-            dateAdded = c.dateAdded,
-            tags = parseTagsString(c.tags),
-            isFavorite = mFavoritesList.contains(c._id))
-    }
-
- private fun mapResponseToCryptoModel2(ce:CryptoEntity4):List<CryptoModel>{
-        return with(mutableListOf<CryptoModel>()){
-            ce.data.forEach { c ->
-                add(mapResponseToCryptoModel2Single(c.value))
-            }
-            this
-        }
-    }
-
-    private fun mapResponseToCryptoModel2Single(c:CryptoEntity4.CryptoCurrency4):CryptoModel{
-        return CryptoModel(
-            _id = c.id,
-            image = parseImageString(c.id),
-            symbol = c.symbol,
-            name = c.name,
-            maxSupply = c.maxSupply.parseDouble(),
-            circulatingSupply = c.circulatingSupply.parseDouble(),
-            totalSupply = c.totalSupply.parseDouble(),
-            cmcRank = c.cmcRank,
-            lastUpdated = c.lastUpdated,
-            price = c.quote.nGN.price,
-            priceUnit = "₦",
-            marketCap = c.quote.nGN.marketCap.parseDouble(),
-            dateAdded = c.dateAdded,
-            tags = parseTagsString(c.tags),
-            isFavorite = mFavoritesList.contains(c.id))
-    }
-
 
     private fun Double?.parseDouble():Double {
         return if(this == null) 0.00
