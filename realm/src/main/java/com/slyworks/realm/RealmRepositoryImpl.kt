@@ -17,7 +17,6 @@ import timber.log.Timber
 class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmRepository {
     //region Vars
     private val TAG: String? = RealmRepositoryImpl::class.simpleName
-    private val mRealm: Realm = Realm.getInstance(config)
     //endregion
 
     companion object{
@@ -27,14 +26,14 @@ class RealmRepositoryImpl(private val config: RealmConfiguration) : RealmReposit
                 image = model.image,
                 symbol = model.symbol,
                 name = model.name,
-                maxSupply = model.maxSupply ?: 0.0,
-                circulatingSupply = model.circulatingSupply ?: 0.0,
-                totalSupply = model.totalSupply ?: 0.0,
+                maxSupply = model.maxSupply ?: "0.0",
+                circulatingSupply = model.circulatingSupply ?: "0.0",
+                totalSupply = model.totalSupply ?: "0.0",
                 cmcRank = model.cmcRank,
                 lastUpdated = model.lastUpdated,
                 price = model.price,
                 priceUnit = model.priceUnit,
-                marketCap = model.marketCap ?: 0.0,
+                marketCap = model.marketCap ?: "0.0",
                 dateAdded = model.dateAdded,
                 tags = model.tags,
                 isFavorite = model.isFavorite )

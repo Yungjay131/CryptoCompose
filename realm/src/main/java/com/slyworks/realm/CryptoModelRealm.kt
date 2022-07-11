@@ -16,16 +16,16 @@ open class CryptoModelRealm(
     var symbol:String = "",
     @Required
     var name:String = "",
-    var maxSupply:Double = 0.0,
-    var circulatingSupply:Double = 0.0,
-    var totalSupply:Double = 0.0,
+    var maxSupply:String = "0.0",
+    var circulatingSupply:String = "0.0",
+    var totalSupply:String = "0.0",
     var cmcRank:Int = 0,
     @Required
     var lastUpdated:String = "",
-    var price:Double = 0.0,
+    var price:String = "0.0",
     @Required
     var priceUnit:String = "",
-    var marketCap:Double = 0.0,
+    var marketCap:String = "0.0",
     @Required
     var dateAdded: String = "",
     @Required

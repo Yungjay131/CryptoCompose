@@ -31,9 +31,6 @@ class App : Application(), ImageLoaderFactory{
     lateinit var appComponent: ApplicationComponent
 
     companion object{
-       /* val imageLoader:ImageLoader = object:ImageLoader{
-
-        }*/
         val imageRequest:ImageRequest.Builder.() -> Unit = {
             memoryCachePolicy(CachePolicy.ENABLED)
             diskCachePolicy(CachePolicy.ENABLED)
@@ -77,7 +74,8 @@ class App : Application(), ImageLoaderFactory{
         Timber.plant(object: Timber.DebugTree(){
             override fun createStackElementTag(element: StackTraceElement): String? {
                 return String.format(
-                    "%s:",
+                    "%s:%s",
+                    element.methodName,
                     super.createStackElementTag(element))
             }
         })

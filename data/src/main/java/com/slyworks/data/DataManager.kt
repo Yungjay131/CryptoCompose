@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 /**
  *Created by Joshua Sylvanus, 2:42 PM, 04-Jun-22.
  */
+enum class SpecificCryptoSearchType{ DETAILS, SEARCH}
 class DataManager
 constructor(private val mNetworkRegister:NetworkRegister,
             private val mRepo1: ApiRepository,
@@ -28,34 +29,43 @@ constructor(private val mNetworkRegister:NetworkRegister,
             Observable.just(mNetworkRegister.getNetworkStatus()),
             mNetworkRegister.subscribeToNetworkUpdates())
 
-    fun getSpecificCryptocurrency(query:String):Observable<CryptoModelCombo>
+    fun getSpecificCryptocurrency(query:String, type:SpecificCryptoSearchType ):Observable<CryptoModelCombo>
     /*TODO:maybe use zip() here*/
-       = mRepo1.getSpecificCryptoInfoMappedWithFavorites(query)
-            .toObservable()
-            .flatMap { c ->
-                if(c != null)
-                    /*means there was a error, probably doesn't exist*/
-                    Observable.just<CryptoModelCombo>(CryptoModelCombo.empty())
-                else{
-                    /*means it exist hence get associated data*/
-                    Observable.combineLatest(
-                        Observable.just<CryptoModelDetails>(c),
-                        mRepo2.getFavorites()
-                              .toObservable()
-                              .flatMap { it:List<Int> ->
-                                  mRepo1.getMultipleCryptoInfoMappedWithFavorites(query, it)
-                                      .toObservable()
-                                      .map { it2:List<CryptoModel> ->
-                                          it2.first()
-                                      }
-                              },
-                        { details:CryptoModelDetails, model:CryptoModel ->
-                            CryptoModelCombo(
-                                model = model,
-                                details = details)
-                        }
-                    )
-                }
+       = Observable.just(query)
+        .flatMap {
+            if (type == SpecificCryptoSearchType.SEARCH) {
+                mRepo1.getSpecificCryptoInfo(query)
+                    .toObservable()
+            } else {
+                mRepo1.getSpecificCryptoInfoForID(query)
+                    .toObservable()
+            }
+        }
+        .flatMap { c ->
+            if (c != null)
+            /*means there was a error, probably doesn't exist*/
+                Observable.just<CryptoModelCombo>(CryptoModelCombo.empty())
+            else {
+                /*means it exist hence get associated data*/
+                Observable.combineLatest(
+                    Observable.just<CryptoModelDetails>(c),
+                    mRepo2.getFavorites()
+                        .toObservable()
+                        .flatMap { it: List<Int> ->
+                            mRepo1.getMultipleCryptoInfoMappedWithFavorites(query, it)
+                                .toObservable()
+                                .map { it2: List<CryptoModel> ->
+                                    it2.first()
+                                }
+                        },
+                    { details: CryptoModelDetails, model: CryptoModel ->
+                        CryptoModelCombo(
+                            model = model,
+                            details = details
+                        )
+                    }
+                )
+            }
             }
 
 

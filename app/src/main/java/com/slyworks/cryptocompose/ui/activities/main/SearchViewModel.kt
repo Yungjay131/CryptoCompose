@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.slyworks.cryptocompose.IViewModel
 import com.slyworks.data.DataManager
+import com.slyworks.data.SpecificCryptoSearchType
 import com.slyworks.models.CryptoModelCombo
 import com.slyworks.models.Outcome
 import io.reactivex.rxjava3.core.Completable
@@ -63,7 +64,7 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
                 dataManager.observeNetworkStatus()
                     .flatMap {
                         if(it)
-                          dataManager.getSpecificCryptocurrency(s)
+                          dataManager.getSpecificCryptocurrency(s, SpecificCryptoSearchType.SEARCH)
                               .flatMap { it2 : CryptoModelCombo ->
                                   if(it2.details == null)
                                       Observable.just(Outcome.FAILURE(value = "no results for query found"))

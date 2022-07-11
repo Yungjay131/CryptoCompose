@@ -25,7 +25,7 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
     override fun getAllCryptoInfoMappedWithFavorites(favorites: List<Int>): Single<List<CryptoModel>> {
         mFavoritesList = favorites
 
-        return mInstance.getAllCryptoCurrencyInformation()
+        return mInstance.getAllCryptoCurrencyInfo()
             .map{
                 val l = mutableListOf<CryptoModel>()
 
@@ -40,8 +40,8 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
                         totalSupply = e.totalSupply.parseDouble(),
                         cmcRank = e.cmcRank,
                         lastUpdated = e.lastUpdated,
-                        price = e.quote.ngn.price,
-                        priceUnit = "",
+                        price = e.quote.ngn.price.parseDouble(),
+                        priceUnit = "₦",
                         marketCap = e.quote.ngn.marketCap.parseDouble(),
                         dateAdded = e.dateAdded,
                         tags = parseTagsString(e.tags),
@@ -61,7 +61,7 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
     override fun getMultipleCryptoInfoMappedWithFavorites(ids: String, favoritesList:List<Int>): Single<List<CryptoModel>> {
         mFavoritesList = favoritesList
 
-        return mInstance.getMultipleCryptoCurrencyInformation(ids)
+        return mInstance.getMultipleCryptoCurrencyInfo(ids)
             .map{
                 val l = mutableListOf<CryptoModel>()
 
@@ -77,8 +77,8 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
                         totalSupply = e.totalSupply.parseDouble(),
                         cmcRank = e.cmcRank,
                         lastUpdated = e.lastUpdated,
-                        price = e.quote.nGN.price,
-                        priceUnit = "",
+                        price = e.quote.nGN.price.parseDouble(),
+                        priceUnit = "₦",
                         marketCap = e.quote.nGN.marketCap.parseDouble(),
                         dateAdded = e.dateAdded,
                         tags = parseTagsString(e.tags),
@@ -93,8 +93,33 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
             }
     }
 
-    override fun getSpecificCryptoInfoMappedWithFavorites(query: String): Single<CryptoModelDetails> =
-        mInstance.getSpecificCryptoCurrencyInformation(query)
+    override fun getSpecificCryptoInfoForID(query: String): Single<CryptoModelDetails> =
+        mInstance.getSpecificCryptoCurrencyInfoForID(query)
+            .map {
+                val index: Int = it.keyList.first()
+
+                /*this returns CryptoCurrencyDetails*/
+                return@map it.data.get(index)!!
+            }
+            .map{
+                return@map CryptoModelDetails(
+                    id = it.id,
+                    name = it.name,
+                    symbol = it.symbol,
+                    category = it.category,
+                    description = it.description,
+                    slug = it.slug,
+                    logo = it.logo,
+                    tags = it.tags ?: emptyList(),
+                    dateAdded = it.dateAdded)
+            }
+            .doOnError {
+                Timber.e(it, "getSpecificCryptoCurrency: error occurred" )
+            }
+
+
+    override fun getSpecificCryptoInfo(query: String): Single<CryptoModelDetails> =
+        mInstance.getSpecificCryptoCurrencyInfo(query)
                  .map {
                      val index: Int = it.keyList.first()
 
@@ -110,14 +135,14 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
                          description = it.description,
                          slug = it.slug,
                          logo = it.logo,
-                         tags = it.tags!!,
+                         tags = it.tags ?: emptyList(),
                          dateAdded = it.dateAdded)
                  }
                  .doOnError {
                      Timber.e(it, "getSpecificCryptoCurrency: error occurred" )
                  }
 
-    private fun Double?.parseDouble():Double {
+    private fun Double?.parseDouble2():Double {
         return if(this == null) 0.00
             else{
                String.format("%.2f", this)
@@ -125,12 +150,11 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
            }
     }
 
-    private fun Double?.parseDouble2():Double {
-        return if (this == null) 0.00
+    private fun Double?.parseDouble():String {
+        return if (this == null) "0.00"
         else
-            DecimalFormat("0.00")
+            DecimalFormat("#,###.##")
                 .format(this)
-                .toDouble()
     }
 
     private fun parseImageString(entityID:Int?):String = String.format(CRYPTO_URL_PATH, entityID)

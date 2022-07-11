@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.slyworks.cryptocompose.IViewModel
 import com.slyworks.data.DataManager
+import com.slyworks.data.SpecificCryptoSearchType
 import com.slyworks.models.CryptoModelCombo
 import com.slyworks.models.Outcome
 import io.reactivex.rxjava3.core.Completable
@@ -43,7 +44,7 @@ class DetailsActivityViewModel(private var dataManager: DataManager) : ViewModel
             return
         }
 
-        val d = dataManager.getSpecificCryptocurrency(query)
+        val d = dataManager.getSpecificCryptocurrency(query, SpecificCryptoSearchType.DETAILS)
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
             .subscribe({

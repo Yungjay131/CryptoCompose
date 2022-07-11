@@ -14,11 +14,13 @@
             android:name=".ui.activities.onboarding.OnboardingActivity"
             android:exported="false"
             android:label="@string/title_activity_onboarding"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.CryptoCompose.NoActionBar2" />
         <activity
             android:name=".ui.activities.splash.SplashActivity"
             android:exported="true"
-            android:label="@string/app_name">
+            android:label="@string/app_name"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -29,11 +31,13 @@
             android:name=".ui.activities.main.MainActivity"
             android:exported="false"
             android:label="@string/app_name"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.CryptoCompose.NoActionBar" />
         <activity
             android:name=".ui.activities.details.DetailsActivity"
             android:exported="false"
             android:label="@string/app_name"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.CryptoCompose.NoActionBar" />
     </application>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
