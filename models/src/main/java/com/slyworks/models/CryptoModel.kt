@@ -19,5 +19,5 @@ data class CryptoModel(
     val marketCap:String?,
     val dateAdded: String,
     val tags:String,//this would be a , separated string
-    val isFavorite:Boolean = false
+    var isFavorite:Boolean = false
 ) : Parcelable

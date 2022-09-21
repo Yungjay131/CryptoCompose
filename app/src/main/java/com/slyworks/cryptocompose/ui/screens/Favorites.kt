@@ -8,8 +8,11 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.slyworks.cryptocompose.ui.activities.main.FavoritesViewModel
 import com.slyworks.cryptocompose.ui.activities.main.HomeViewModel
 import com.slyworks.models.CryptoModel
@@ -31,26 +34,37 @@ fun FavoriteMain(viewModel: FavoritesViewModel){
     val errorState:State<Boolean> = viewModel.errorState.observeAsState(initial = false)
     val progressState:State<Boolean> = viewModel.progressState.observeAsState(initial = true)
 
-    remember("KEY") { mutableStateOf(viewModel.getFavorites()) }
+    val lifecycle: Lifecycle = LocalLifecycleOwner.current.lifecycle
+    val latestLifecycleEvent:MutableState<Lifecycle.Event> = remember{ mutableStateOf(Lifecycle.Event.ON_ANY) }
+    DisposableEffect(key1 = "KEY"){
+        val observer: LifecycleEventObserver = LifecycleEventObserver{ _, event: Lifecycle.Event ->
+            latestLifecycleEvent.value = event
+        }
+
+        lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycle.removeObserver(observer)
+        }
+    }
+
+    if(latestLifecycleEvent.value == Lifecycle.Event.ON_RESUME)
+        remember("KEY"){ mutableStateOf(viewModel.getFavorites()) }
+
+    if(latestLifecycleEvent.value == Lifecycle.Event.ON_PAUSE)
+        remember("KEY") { mutableStateOf(viewModel.unbind()) }
+
+    //remember("KEY") { mutableStateOf(viewModel.getFavorites()) }
 
     when{
-        progressState.value ->{
-            ProgressBar()
-        }
-        successState.value ->{
-            FavoritesList(viewModel = viewModel, items = successData.value!!)
-        }
+        progressState.value -> ProgressBar()
+        successState.value -> FavoritesList(viewModel = viewModel, items = successData.value!!)
+        noNetworkState.value -> NoInternetComposable()
+        errorState.value -> ErrorComposable(text = errorData.value!!)
         noDataState.value ->{
             ErrorComposable(text = "you have no favorites at the moment."+
                     "Check the \"Favorite\" icon to add an item to your Favorites")
         }
-        noNetworkState.value ->{
-            NoInternetComposable()
-        }
-        errorState.value ->{
-            ErrorComposable(text = errorData.value!!)
-        }
-
     }
 
 }

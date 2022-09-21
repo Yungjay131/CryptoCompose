@@ -6,7 +6,6 @@ import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 
 interface ApiRepository : Repository {
-
     fun getAllCryptoInfoMappedWithFavorites(favorites:List<Int>):Single<List<CryptoModel>>
     fun getSpecificCryptoInfo(query:String): Single<CryptoModelDetails>
     fun getSpecificCryptoInfoForID(query:String):Single<CryptoModelDetails>

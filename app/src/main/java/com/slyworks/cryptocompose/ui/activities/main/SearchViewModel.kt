@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.slyworks.cryptocompose.IViewModel
+import com.slyworks.cryptocompose.plusAssign
 import com.slyworks.data.DataManager
 import com.slyworks.data.SpecificCryptoSearchType
 import com.slyworks.models.CryptoModelCombo
@@ -34,7 +35,6 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
     val successData:LiveData<CryptoModelCombo>
     get() = _successData
 
-
     private val _failureState:MutableLiveData<Boolean> = MutableLiveData()
     val failureState:LiveData<Boolean>
     get() = _failureState
@@ -51,34 +51,46 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
     val errorData:LiveData<String>
     get() = _errorData
 
-    val progressState:MutableLiveData<Boolean> = MutableLiveData()
+    private val _networkStateLiveData:MutableLiveData<Boolean> = MutableLiveData()
+    val networkStateLiveData:LiveData<Boolean>
+    get() = _networkStateLiveData
 
-    private val mSubscriptions = CompositeDisposable()
+    private val _progressStateLiveData:MutableLiveData<Boolean> = MutableLiveData()
+    val progressStateLiveData:LiveData<Boolean>
+    get() = _progressStateLiveData
+
+    lateinit var query:String
+
+    private val disposables = CompositeDisposable()
     //endregion
 
 
     fun initSearch(){
-        val d = searchObservable
-            .debounce(3, TimeUnit.SECONDS)
-            .switchMap { s ->
-                dataManager.observeNetworkStatus()
-                    .flatMap {
-                        if(it)
-                          dataManager.getSpecificCryptocurrency(s, SpecificCryptoSearchType.SEARCH)
-                              .flatMap { it2 : CryptoModelCombo ->
-                                  if(it2.details == null)
-                                      Observable.just(Outcome.FAILURE(value = "no results for query found"))
-                                  else
-                                      Observable.just(Outcome.SUCCESS(it2))
-                              }
-                        else
-                           Observable.just(Outcome.ERROR(value = "no internet connection"))
-                    }
+        /*fixme: mutating outside state before subscribe()*/
+        disposables +=
+            searchObservable
+            //.debounce(3_000, TimeUnit.MILLISECONDS)
+            .doOnNext{
+                _errorState.postValue(false)
+                _successState.postValue(false)
+                _progressStateLiveData.postValue(true)
             }
+            .filter { _ ->
+                val status:Boolean = dataManager.getNetworkStatus()
+                if(!status){
+                   _progressStateLiveData.postValue(false)
+                   _networkStateLiveData.postValue(false)
+                }
+
+                return@filter status
+            }
+            .switchMap { _ ->
+                dataManager.getSpecificCryptocurrency(query, SpecificCryptoSearchType.SEARCH)
+             }
             .observeOn(Schedulers.io())
             .subscribeOn(Schedulers.io())
             .subscribe({
-                progressState.postValue(false)
+                _progressStateLiveData.postValue(false)
 
                 when{
                     it.isSuccess ->{
@@ -89,52 +101,52 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
                         _failureData.postValue(it.getTypedValue<String>())
                         _failureState.postValue(true)
                     }
-                    it.isError ->{
-                        _errorData.postValue(it.getTypedValue<String>())
-                        _errorState.postValue(true)
-                    }
                 }
             },{
-                Timber.e(it, "initSearch: error occurred")
+                Timber.e(it, "initSearch: error occurred ${it.message}")
                 _errorData.postValue("an error occurred while processing your request")
                 _errorState.postValue(true)
 
             })
 
-        mSubscriptions.add(d)
     }
 
-
     override fun setItemFavoriteStatus(entity:Int,status:Boolean){
-        val o: Completable =
-            if (status)
+       disposables +=
+           (if (status)
                 dataManager.addToFavorites(entity)
             else
-                dataManager.removeFromFavorites(entity)
-
-        val d  = o.observeOn(Schedulers.io())
+                dataManager.removeFromFavorites(entity))
+            .observeOn(Schedulers.io())
             .subscribeOn(Schedulers.io())
-            .subscribe()
+            .subscribe({},{
+                Timber.e(it, "setItemFavorites: error occurred ${it.message}")
+                _errorData.postValue("an error occurred while processing your request")
+                _errorState.postValue(true)
+            })
 
-        mSubscriptions.add(d)
     }
 
     override fun observeNetworkState(): LiveData<Boolean> {
-        val l:MutableLiveData<Boolean> = MutableLiveData()
-        val d = dataManager.observeNetworkStatus()
+        disposables +=
+        dataManager.observeNetworkStatus()
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
-            .subscribe {
-                l.postValue(it)
-            }
+            .subscribe({
+                _networkStateLiveData.postValue(it)
+            },{
+                Timber.e(it, "observeNetworkState: error occurred ${it.message}")
+                _errorData.postValue("an error occurred while processing your request")
+                _errorState.postValue(true)
+            })
 
-        mSubscriptions.add(d)
-
-        return l
+        return networkStateLiveData
     }
 
     override fun onCleared() {
         super.onCleared()
-        mSubscriptions.clear()
+        unbind()
     }
+
+    fun unbind():Unit = disposables.clear()
 }

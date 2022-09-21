@@ -11,6 +11,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Scale
 import coil.transform.CircleCropTransformation
+import com.facebook.stetho.Stetho
 import com.slyworks.cryptocompose.di.ApplicationComponent
 import com.slyworks.cryptocompose.di.DaggerApplicationComponent
 import com.slyworks.models.Conf
@@ -58,6 +59,8 @@ class App : Application(), ImageLoaderFactory{
             .schemaVersion(1L)
             .build()
 
+        Stetho.initializeWithDefaults(this)
+
         appComponent = DaggerApplicationComponent
             .builder()
             .componentConf(Conf)
@@ -65,18 +68,18 @@ class App : Application(), ImageLoaderFactory{
             .componentApplication(this)
             .componentContext(this)
             .build()
-            .apply {
-              inject(this@App)
+            .also {
+              it.inject(this@App)
             }
 
 
         /*init Timber logger, its an api dependency in :repository*/
         Timber.plant(object: Timber.DebugTree(){
-            override fun createStackElementTag(element: StackTraceElement): String? {
+            override fun createStackElementTag(element: StackTraceElement): String {
                 return String.format(
                     "%s:%s",
-                    element.methodName,
-                    super.createStackElementTag(element))
+                    super.createStackElementTag(element),
+                    element.methodName)
             }
         })
         Timber.e("app created")

@@ -17,19 +17,16 @@ class NetworkRegister(private var context: Context) {
     private var mImpl: NetworkWatcher? = null
     //endregion
 
-   init{
-       init2()
-   }
+   init{ init2() }
 
-    private fun init1(context: Context){
+    private fun init1(){
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.N){
             val  filter = IntentFilter()
             filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
             mImpl = NetworkBroadcastReceiver()
             context.registerReceiver(mImpl as NetworkBroadcastReceiver, filter)
-        }else{
+        }else
             mImpl = NetworkWatcherImpl(context)
-        }
     }
 
     private fun init2(){
@@ -39,8 +36,13 @@ class NetworkRegister(private var context: Context) {
             mImpl = NetworkWatcherImpl(context)
     }
 
-
-    fun emitInitialNetworkStatus() = mImpl!!.emitInitialNetworkStatus()
+    /* fuck it!!, just use BroadcastReceiver on every version */
+    private fun init3(){
+        val  filter = IntentFilter()
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
+        mImpl = NetworkBroadcastReceiver()
+        context.registerReceiver(mImpl as NetworkBroadcastReceiver, filter)
+    }
 
     fun getNetworkStatus(): Boolean = mImpl!!.getNetworkStatus()
 
@@ -51,7 +53,6 @@ class NetworkRegister(private var context: Context) {
 
     fun unsubscribeToNetworkUpdates(){
         mImpl!!.unsubscribeTo()
-        mImpl = null
     }
 
 }

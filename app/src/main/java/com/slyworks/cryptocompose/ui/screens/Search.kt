@@ -21,12 +21,15 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.rememberImagePainter
 import coil.size.Scale
 import coil.transform.CircleCropTransformation
@@ -53,37 +56,50 @@ fun SearchMain(viewModel: SearchViewModel){
     val failureData:State<String?> = viewModel.failureData.observeAsState()
     val errorState:State<Boolean> = viewModel.errorState.observeAsState(initial = false)
     val errorData:State<String?> = viewModel.errorData.observeAsState()
-    val progressState:State<Boolean> = viewModel.progressState.observeAsState(initial = false)
+    val progressState:State<Boolean> = viewModel.progressStateLiveData.observeAsState(initial = false)
+    val networkState:State<Boolean> = viewModel.networkStateLiveData.observeAsState(initial = false)
 
-    remember("KEY"){ mutableStateOf(viewModel.initSearch()) }
+    val lifecycle:Lifecycle = LocalLifecycleOwner.current.lifecycle
+    val latestLifecycleEvent:MutableState<Lifecycle.Event> = remember{ mutableStateOf(Lifecycle.Event.ON_ANY) }
+    DisposableEffect(key1 = "KEY"){
+        val observer:LifecycleEventObserver = LifecycleEventObserver{ _, event:Lifecycle.Event ->
+            latestLifecycleEvent.value = event
+        }
+
+        lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycle.removeObserver(observer)
+        }
+    }
+
+    if(latestLifecycleEvent.value == Lifecycle.Event.ON_RESUME)
+        remember("KEY"){ mutableStateOf(viewModel.initSearch()) }
+
+    if(latestLifecycleEvent.value == Lifecycle.Event.ON_PAUSE)
+        remember("KEY"){ mutableStateOf(viewModel.unbind()) }
+
+    //remember("KEY"){ mutableStateOf(viewModel.initSearch()) }
 
     Column {
         SearchViewComposable(
             onSearchTextChanged = {
-                viewModel.progressState.value = true
+                viewModel.query = it
                 viewModel.searchObservable.onNext(it)
             },
             onClearClick = {
-                viewModel.progressState.value = true
+                viewModel.query = it
                 viewModel.searchObservable.onNext(it)
-            }
-        )
+            })
 
         Spacer(modifier = Modifier.height(16.dp))
 
            when {
-             progressState.value ->{
-                ProgressBar()
-             }
-             successState.value ->{
-                DetailsScrollColumn(viewModel = viewModel, entity = successData.value!!)
-             }
-             failureState.value ->{
-                 NoResultFoundComposable()
-             }
-             errorState.value ->{
-                 ErrorComposable2(text = errorData.value!!)
-             }
+             progressState.value -> ProgressBar()
+             successState.value -> DetailsScrollColumn(viewModel = viewModel, entity = successData.value!!)
+             !networkState.value -> NoInternetComposable()
+             failureState.value -> NoResultFoundComposable(text = failureData.value)
+             errorState.value -> ErrorComposable2(text = errorData.value!!)
            }
 
         }
@@ -131,10 +147,10 @@ fun SearchViewComposable(onSearchTextChanged:(String) -> Unit,
         onValueChange ={
            state = it
 
-            if(!check(it))
+            /*if(!check(it))
                 return@OutlinedTextField
 
-           onSearchTextChanged(it.trim())
+           onSearchTextChanged(it.trim())*/
         },
         placeholder = {
             Text(text = placeHolderText)
@@ -171,10 +187,10 @@ fun SearchViewComposable(onSearchTextChanged:(String) -> Unit,
 /*TODO: add lottie json here ( find how - maybe a .gif)*/
 @ExperimentalUnitApi
 @Composable
-fun NoResultFoundComposable(){
+fun NoResultFoundComposable(text:String? = null){
     Column(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally) {
 
         DisplayLottieAnim(
@@ -186,7 +202,7 @@ fun NoResultFoundComposable(){
         Text(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             fontSize = TextUnit(20F, TextUnitType.Sp),
-            text = "No matches found")
+            text = text ?: "No matches found")
     }
 }
 

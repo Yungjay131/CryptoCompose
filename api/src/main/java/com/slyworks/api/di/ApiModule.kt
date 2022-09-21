@@ -1,12 +1,14 @@
 package com.slyworks.api.di
 
 import android.app.Application
+import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.google.gson.GsonBuilder
 import com.slyworks.api.ApiRepositoryImpl
 import com.slyworks.api.CoinMarketApi
 import com.slyworks.di.ApplicationScope
 import com.slyworks.models.NetworkConf
 import com.slyworks.repository.ApiRepository
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import okhttp3.Cache
@@ -36,6 +38,7 @@ object ApiModule {
     fun provideHttpClient(cache: Cache): OkHttpClient =
         OkHttpClient.Builder()
             .cache(cache)
+            .addNetworkInterceptor(StethoInterceptor())
             .build()
 
     @Provides
@@ -66,4 +69,11 @@ object ApiModule {
     fun provideApiRepository(api:CoinMarketApi): ApiRepository {
         return ApiRepositoryImpl(api)
     }
+
+    /*@Module
+    interface Bindings{
+        @Binds
+        @ApplicationScope
+        fun bindApiRepository(impl: ApiRepositoryImpl): ApiRepository
+    }*/
 }

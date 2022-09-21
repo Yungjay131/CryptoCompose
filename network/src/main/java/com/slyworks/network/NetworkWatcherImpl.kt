@@ -35,10 +35,6 @@ class NetworkWatcherImpl(private var context:Context?) : NetworkWatcher {
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    override fun emitInitialNetworkStatus() = mO!!.onNext(getNetworkStatus())
-
-
-    @RequiresApi(Build.VERSION_CODES.M)
     override fun getNetworkStatus(): Boolean {
         val network: Network = mCm.activeNetwork ?: return false
         val capabilities:NetworkCapabilities = mCm.getNetworkCapabilities(network) ?: return false

@@ -28,8 +28,6 @@ class NetworkWatcherLegacyImpl(private var context:Context?): NetworkWatcher {
         context = null
     }
 
-    override fun emitInitialNetworkStatus()  = mO!!.onNext(getNetworkStatus())
-
     override fun getNetworkStatus(): Boolean {
         val networkInfo: NetworkInfo? =
             mCm.getActiveNetworkInfo()

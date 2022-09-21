@@ -27,13 +27,8 @@ class NetworkBroadcastReceiver : BroadcastReceiver(), NetworkWatcher {
     }
 
     /*on 24+*/
-    override fun subscribeTo(): Observable<Boolean> {
-        return o!!.hide()
-    }
-
-    override fun emitInitialNetworkStatus() {
-        o!!.onNext(networkStatus)
-    }
+    override fun subscribeTo(): Observable<Boolean>
+    = o!!.startWithItem(networkStatus).hide()
 
     override fun getNetworkStatus():Boolean = networkStatus
 

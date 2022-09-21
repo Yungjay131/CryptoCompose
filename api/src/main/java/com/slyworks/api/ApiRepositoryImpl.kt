@@ -11,15 +11,14 @@ import java.text.DecimalFormat
 /**
  *Created by Joshua Sylvanus, 5:20 AM, 04-Jun-22.
  */
-class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository {
-
+class ApiRepositoryImpl(private val mInstance:CoinMarketApi): ApiRepository {
     //region Vars
     private val TAG: String? = ApiRepositoryImpl::class.simpleName
 
     private lateinit var mFavoritesList:List<Int>
     //endregion
 
-    override fun getData():Single<List<CryptoModel>> =
+    override fun getData(favoriteIDs:List<Int>):Single<List<CryptoModel>> =
         getAllCryptoInfoMappedWithFavorites(emptyList())
 
     override fun getAllCryptoInfoMappedWithFavorites(favorites: List<Int>): Single<List<CryptoModel>> {
@@ -66,7 +65,7 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
                 val l = mutableListOf<CryptoModel>()
 
                 it.keyList.forEach { i ->
-                    val e:CryptoEntityMultiple.CryptoCurrencyMultiple = it.data.get(i)!!
+                    val e:CryptoEntityMultiple.CryptoCurrencyMultiple = it.data[i]!!
                     val model:CryptoModel = CryptoModel(
                         _id = e.id,
                         image = parseImageString(e.id),
@@ -82,8 +81,9 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
                         marketCap = e.quote.nGN.marketCap.parseDouble(),
                         dateAdded = e.dateAdded,
                         tags = parseTagsString(e.tags),
-                        isFavorite = mFavoritesList.contains(e.id)
-                    )
+                        isFavorite = mFavoritesList.contains(e.id))
+
+                    l.add(model)
                 }
 
                 return@map l as List<CryptoModel>
@@ -152,9 +152,9 @@ class ApiRepositoryImpl constructor(var mInstance:CoinMarketApi): ApiRepository 
 
     private fun Double?.parseDouble():String {
         return if (this == null) "0.00"
-        else
-            DecimalFormat("#,###.##")
-                .format(this)
+               else
+                   DecimalFormat("#,###.##")
+                       .format(this)
     }
 
     private fun parseImageString(entityID:Int?):String = String.format(CRYPTO_URL_PATH, entityID)

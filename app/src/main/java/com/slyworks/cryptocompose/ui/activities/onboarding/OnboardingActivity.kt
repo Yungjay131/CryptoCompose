@@ -22,6 +22,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -70,7 +71,7 @@ class OnboardingActivity : ComponentActivity() {
         _this = null
     }
 
-    @ExperimentalUnitApi
+    @OptIn(ExperimentalUnitApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -133,26 +134,32 @@ fun OnboardingMain(viewModel: OnboardingActivityViewModel){
               currentId = currentId,
               nextFunc = nextScreen,
               prevFunc = previousScreen,
-              startFunc = OnboardingActivity.Companion::navigateToMainActivity)
+              startFunc = OnboardingActivity.Companion::navigateToMainActivity,
+              textVisibilityState)
     }
 }
 @ExperimentalUnitApi
 @Composable
 fun OnboardingScreen( imageId:Int,
                       currentId:Int,
-                      nextFunc:()->Unit,
-                      prevFunc:()->Unit,
+                      nextFunc:()-> Unit,
+                      prevFunc:()-> Unit,
                       startFunc:() -> Unit,
+                      visibilityState: MutableTransitionState<Boolean>,
                       modifier: Modifier = Modifier){
 
     Column(
         modifier = modifier
     ) {
+     /*   AnimatedVisibility(
+            visibleState = visibilityState,
+            enter = fadeIn()
+        ) {}*/
 
             Image(
-                modifier = Modifier.weight(0.65F),
+                modifier = Modifier.weight(0.65F).fillMaxWidth(),
                 painter = rememberImagePainter(
-                    data = when(imageId){
+                    data = when (imageId) {
                         0 -> R.drawable.onboarding_1
                         1 -> R.drawable.onboarding_2
                         2 -> R.drawable.onboarding_3
@@ -164,11 +171,13 @@ fun OnboardingScreen( imageId:Int,
                 ),
                 contentDescription = ""
             )
-            Text(modifier = Modifier
-                .weight(0.2F)
-                .align(Alignment.CenterHorizontally)
-                .padding(start = 16.dp, end = 16.dp),
-                text = when(currentId){
+
+            Text(
+                modifier = Modifier
+                    .weight(0.2F)
+                    .align(Alignment.CenterHorizontally)
+                    .padding(start = 16.dp, end = 16.dp),
+                text = when (currentId) {
                     0 -> "Improve your business with accurate data, and latest cryptocurrency information updates"
                     1 -> "Get in-depth analysis and forecasts for your favorites cryptocurrencies"
                     2 -> "Drive up your business revenue by saving costs otherwise spent on forecasting sites, by using our services"
@@ -176,7 +185,9 @@ fun OnboardingScreen( imageId:Int,
                 },
                 color = Color.Blue,
                 textAlign = TextAlign.Center,
-                fontSize = TextUnit(20F, TextUnitType.Sp))
+                fontSize = TextUnit(20F, TextUnitType.Sp)
+            )
+
 
         ConstraintLayout(
             modifier = Modifier

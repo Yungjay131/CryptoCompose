@@ -1,17 +1,16 @@
 package com.slyworks.data.di
 
+import app.slyworks.room.di.RoomModule
 import com.slyworks.di.ApplicationScope
-import com.slyworks.api.CoinMarketApi
 import com.slyworks.api.ApiRepositoryImpl
 import com.slyworks.api.di.ApiModule
 import com.slyworks.data.DataManager
 import com.slyworks.network.NetworkRegister
 import com.slyworks.network.di.NetworkModule
-import com.slyworks.realm.RealmRepositoryImpl
+import com.slyworks.realm.RealmDBRepositoryImpl
 import com.slyworks.realm.di.RealmModule
 import com.slyworks.repository.ApiRepository
-import com.slyworks.repository.RealmRepository
-import com.slyworks.repository.Repository
+import com.slyworks.repository.DBRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -25,6 +24,7 @@ import javax.inject.Named
 @Module(
     includes = [
         RealmModule::class,
+        RoomModule::class,
         ApiModule::class,
         NetworkModule::class
     ]
@@ -34,8 +34,8 @@ object DataModule {
     @ApplicationScope
     fun provideDataManager(register:NetworkRegister,
                            repo1: ApiRepository,
-                           repo2: RealmRepository
-    ): DataManager {
+                           @Named("realm_db_repository_impl")
+                           repo2: DBRepository): DataManager {
         return DataManager(register,repo1,repo2)
     }
 
@@ -44,12 +44,11 @@ object DataModule {
         @Binds
         @Named("network")
         @ApplicationScope
-        fun bindNetworkRepository(impl: ApiRepositoryImpl): Repository
+        fun bindNetworkRepository(impl: ApiRepositoryImpl): ApiRepository
 
         @Binds
         @Named("realm")
         @ApplicationScope
-        fun bindRealmRepository(impl: RealmRepositoryImpl): Repository
-
+        fun bindRealmRepository(impl: RealmDBRepositoryImpl): DBRepository
     }
 }

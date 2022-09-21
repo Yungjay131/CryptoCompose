@@ -9,6 +9,7 @@
       <module name="CryptoCompose.network" target="11" />
       <module name="CryptoCompose.realm" target="11" />
       <module name="CryptoCompose.repository" target="11" />
+      <module name="CryptoCompose.room" target="11" />
     </bytecodeTargetLevel>
   </component>
 </project>

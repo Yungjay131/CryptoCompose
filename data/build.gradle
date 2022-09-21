@@ -33,11 +33,13 @@ android {
 }
 
 dependencies {
-    api project(path: ':network')
-    api project(path: ':api')
+    implementation project(path: ':network')
+    implementation project(path: ':api')
+    implementation project(path: ':repository')
+    implementation project(path: ':room')
 
     /*TODO:exclude realm transitive dependencies*/
-    api project(path: ':realm'/*{
+    implementation project(path: ':realm'/*{
      exclude module: "repository"
     }*/)
 

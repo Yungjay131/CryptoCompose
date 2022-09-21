@@ -4,11 +4,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.slyworks.cryptocompose.IViewModel
+import com.slyworks.cryptocompose.plusAssign
 import com.slyworks.data.DataManager
 import com.slyworks.models.CryptoModel
 import com.slyworks.models.Outcome
 import io.reactivex.rxjava3.core.Completable
-import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
@@ -17,77 +17,101 @@ import timber.log.Timber
 /**
  *Created by Joshua Sylvanus, 2:35 PM, 01-Jun-22.
  */
-class HomeViewModel(private var dataManager: DataManager) : ViewModel(), IViewModel {
+class HomeViewModel(private val dataManager: DataManager) : ViewModel(), IViewModel {
     //region Vars
-    private val TAG: String? = HomeViewModel::class.simpleName
+    private val _successDataLiveData:MutableLiveData<List<CryptoModel>> = MutableLiveData()
+    val successDataLiveData: LiveData<List<CryptoModel>>
+    get() = _successDataLiveData as LiveData<List<CryptoModel>>
 
-    private val _homeStateLiveData:MutableLiveData<Outcome> = MutableLiveData(Outcome.ERROR(null))
-    val homeStateLiveData:LiveData<Outcome>
-    get() = _homeStateLiveData
+    private val _successStateLiveData:MutableLiveData<Boolean> = MutableLiveData()
+    val successStateLiveData: LiveData<Boolean>
+    get() = _successStateLiveData
 
-    private val _homeDataListLiveData:MutableLiveData<List<CryptoModel>> = MutableLiveData()
-    val homeDataListLiveData: LiveData<List<CryptoModel>>
-    get() = _homeDataListLiveData as LiveData<List<CryptoModel>>
+    private val _failureDataLiveData:MutableLiveData<String> = MutableLiveData()
+    val failureDataLiveData:LiveData<String>
+    get() = _failureDataLiveData as LiveData<String>
 
-    private val mSubscriptions = CompositeDisposable()
+    private val _failureStateLiveData:MutableLiveData<Boolean>  = MutableLiveData()
+    val failureStateLiveData:LiveData<Boolean>
+    get() = _failureStateLiveData as LiveData<Boolean>
+
+    private val _networkErrorStateLive:MutableLiveData<Boolean> = MutableLiveData()
+    val networkStateLiveData:LiveData<Boolean>
+    get() = _networkErrorStateLive as LiveData<Boolean>
+
+    private val _progressStateLiveData:MutableLiveData<Boolean> = MutableLiveData()
+    val progressStateLiveData:LiveData<Boolean>
+    get() = _progressStateLiveData as LiveData<Boolean>
+
+
+    private val disposables = CompositeDisposable()
     //endregion
 
     fun getData(){
-        val d =
-            dataManager.getData()
-            .subscribeOn(Schedulers.io())
-            .observeOn(Schedulers.io())
-            .subscribe(
-                {
-                    if(it.isNullOrEmpty()){
-                        _homeStateLiveData.postValue(Outcome.FAILURE("you are currently not"+
-                        " connected to the internet and have no data saved offline"))
-                    }else{
-                        _homeStateLiveData.postValue(Outcome.SUCCESS(null))
-                        _homeDataListLiveData.postValue(it)
-                    }
-                },
-                {
-                    Timber.e(it,"getData: error occurred")
-                    _homeStateLiveData.postValue(Outcome.FAILURE("an error occurred while processing your request"))
-                }
-            )
+        _successStateLiveData.postValue(false)
+        _failureStateLiveData.postValue(false)
+        _progressStateLiveData.postValue(true)
 
-        mSubscriptions.add(d)
+        disposables +=
+        dataManager.getData()
+                   .subscribeOn(Schedulers.io())
+                   .observeOn(Schedulers.io())
+                   .subscribe(
+                       {
+                           /* resetting all the fields first */
+                           _progressStateLiveData.postValue(false)
+                           _successStateLiveData.postValue(false)
+                           _failureStateLiveData.postValue(false)
+
+                           if(it.isSuccess){
+                              _successDataLiveData.postValue(it.getTypedValue<List<CryptoModel>>())
+                              _successStateLiveData.postValue(true)
+                           }else{
+                              _failureDataLiveData.postValue(it.getTypedValue<String>())
+                               _failureStateLiveData.postValue(true)
+                           }
+                       },
+                       {
+                           Timber.e(it,"getData: error occurred ${it.message}")
+                           _failureDataLiveData.postValue("an error occurred while processing your request")
+                       })
     }
 
 
     override fun setItemFavoriteStatus(entity:Int, status:Boolean){
-        val o: Completable =
-            if (status)
+        disposables += //type Completable
+            (if (status)
                 dataManager.addToFavorites(entity)
             else
-                dataManager.removeFromFavorites(entity)
-
-        val d  = o.observeOn(Schedulers.io())
-                  .subscribeOn(Schedulers.io())
-                  .subscribe()
-
-        mSubscriptions.add(d)
+                dataManager.removeFromFavorites(entity))
+            .observeOn(Schedulers.io())
+            .subscribeOn(Schedulers.io())
+            .subscribe({}, {
+                Timber.e(it,"setItemFavorites: error occurred  ${it.message}")
+                _failureDataLiveData.postValue("an error occurred while processing your request")
+            })
     }
 
     override fun observeNetworkState(): LiveData<Boolean> {
         val l:MutableLiveData<Boolean> = MutableLiveData()
-        val d = dataManager.observeNetworkStatus()
+        disposables +=
+            dataManager.observeNetworkStatus()
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
-            .subscribe {
+            .subscribe({
                 l.postValue(it)
-            }
-
-        mSubscriptions.add(d)
-
+            },
+            {
+                Timber.e(it,"observeNetworkStatus: error occurred  ${it.message}")
+                _failureDataLiveData.postValue("an error occurred while processing your request")
+            })
         return l
     }
 
     override fun onCleared() {
         super.onCleared()
-        mSubscriptions.clear()
+        unbind()
     }
 
+    fun unbind():Unit = disposables.clear()
 }
