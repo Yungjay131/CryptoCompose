@@ -20,4 +20,19 @@ data class CryptoModel(
     val dateAdded: String,
     val tags:String,//this would be a , separated string
     var isFavorite:Boolean = false
-) : Parcelable
+) : Parcelable, Comparable<CryptoModel>{
+
+    override fun compareTo(other: CryptoModel): Int {
+        return when{
+            this._id > other._id -> 1
+            this._id < other._id -> -1
+            this._id == other._id -> {
+                if(this.name[0] > other.name[0])
+                    1
+                else
+                    -1
+            }
+            else -> 0
+        }
+    }
+}

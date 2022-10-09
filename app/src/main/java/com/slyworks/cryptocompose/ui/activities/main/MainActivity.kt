@@ -1,11 +1,9 @@
 package com.slyworks.cryptocompose.ui.activities.main
 
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -18,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import com.slyworks.cryptocompose.ui.theme.CryptoComposeTheme
 import kotlinx.coroutines.launch
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -29,16 +26,18 @@ import androidx.navigation.compose.rememberNavController
 import com.slyworks.cryptocompose.EXTRA_ACTIVITY_DETAILS
 import com.slyworks.cryptocompose.appComp
 import com.slyworks.cryptocompose.ui.activities.details.DetailsActivity
-import com.slyworks.cryptocompose.ui.screens.*
 import com.slyworks.cryptocompose.Navigator
-import com.slyworks.models.CryptoModel
+import com.slyworks.cryptocompose.ui.screens.main_activity.FavoriteMain
+import com.slyworks.cryptocompose.ui.screens.main_activity.HomeMain
+import com.slyworks.cryptocompose.ui.screens.main_activity.MainActivityScreen
+import com.slyworks.cryptocompose.ui.screens.main_activity.SearchMain
 import javax.inject.Inject
 
 @ExperimentalUnitApi
 class MainActivity : ComponentActivity() {
     //region Vars
-    @Inject
-    lateinit var mainActivityViewModel: MainActivityViewModel
+    /*@Inject
+    lateinit var mainActivityViewModel: MainActivityViewModel*/
 
     @Inject
     lateinit var homeViewModel: HomeViewModel

@@ -7,6 +7,14 @@ plugins {
 
 
 android {
+    signingConfigs {
+        release {
+            storeFile file('C:\\.android\\joshua_keystore.jks')
+            storePassword 'chimdiukwu'
+            keyAlias 'joshua_keystore'
+            keyPassword 'chimdiukwu'
+        }
+    }
     compileSdk 32
 
     defaultConfig {

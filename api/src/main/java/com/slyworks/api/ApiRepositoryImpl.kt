@@ -13,9 +13,21 @@ import java.text.DecimalFormat
  */
 class ApiRepositoryImpl(private val mInstance:CoinMarketApi): ApiRepository {
     //region Vars
-    private val TAG: String? = ApiRepositoryImpl::class.simpleName
-
     private lateinit var mFavoritesList:List<Int>
+    private val mapper:(CryptoEntityDetails.CryptoCurrencyDetails) -> CryptoModelDetails
+            = {
+        CryptoModelDetails(
+            id = it.id,
+            name = it.name,
+            symbol = it.symbol,
+            category = it.category,
+            description = it.description,
+            slug = it.slug,
+            logo = it.logo,
+            tags = it.tags ?: emptyList(),
+            dateAdded = it.dateAdded)
+    }
+
     //endregion
 
     override fun getData(favoriteIDs:List<Int>):Single<List<CryptoModel>> =
@@ -86,6 +98,7 @@ class ApiRepositoryImpl(private val mInstance:CoinMarketApi): ApiRepository {
                     l.add(model)
                 }
 
+                l.sort()
                 return@map l as List<CryptoModel>
             }
             .doOnError {
@@ -93,51 +106,29 @@ class ApiRepositoryImpl(private val mInstance:CoinMarketApi): ApiRepository {
             }
     }
 
-    override fun getSpecificCryptoInfoForID(query: String): Single<CryptoModelDetails> =
-        mInstance.getSpecificCryptoCurrencyInfoForID(query)
+    override fun getSpecificCryptoInfoForID(query: String): Single<CryptoModelDetails>
+    = mInstance.getSpecificCryptoCurrencyInfoForID(query)
             .map {
                 val index: Int = it.keyList.first()
 
                 /*this returns CryptoCurrencyDetails*/
                 return@map it.data.get(index)!!
             }
-            .map{
-                return@map CryptoModelDetails(
-                    id = it.id,
-                    name = it.name,
-                    symbol = it.symbol,
-                    category = it.category,
-                    description = it.description,
-                    slug = it.slug,
-                    logo = it.logo,
-                    tags = it.tags ?: emptyList(),
-                    dateAdded = it.dateAdded)
-            }
+            .map(mapper)
             .doOnError {
                 Timber.e(it, "getSpecificCryptoCurrency: error occurred" )
             }
 
 
-    override fun getSpecificCryptoInfo(query: String): Single<CryptoModelDetails> =
-        mInstance.getSpecificCryptoCurrencyInfo(query)
+    override fun getSpecificCryptoInfo(query: String): Single<CryptoModelDetails>
+    = mInstance.getSpecificCryptoCurrencyInfo(query)
                  .map {
                      val index: Int = it.keyList.first()
 
                      /*this returns CryptoCurrencyDetails*/
                      return@map it.data.get(index)!!
                  }
-                 .map{
-                     return@map CryptoModelDetails(
-                         id = it.id,
-                         name = it.name,
-                         symbol = it.symbol,
-                         category = it.category,
-                         description = it.description,
-                         slug = it.slug,
-                         logo = it.logo,
-                         tags = it.tags ?: emptyList(),
-                         dateAdded = it.dateAdded)
-                 }
+                 .map(mapper)
                  .doOnError {
                      Timber.e(it, "getSpecificCryptoCurrency: error occurred" )
                  }
@@ -153,19 +144,18 @@ class ApiRepositoryImpl(private val mInstance:CoinMarketApi): ApiRepository {
     private fun Double?.parseDouble():String {
         return if (this == null) "0.00"
                else
-                   DecimalFormat("#,###.##")
-                       .format(this)
+                   DecimalFormat("#,###.##").format(this)
     }
 
     private fun parseImageString(entityID:Int?):String = String.format(CRYPTO_URL_PATH, entityID)
     private fun parseTagsString(tags: List<String>?):String{
-       if(tags == null) return ""
+        if(tags == null) return ""
 
-       var s = ""
+       val s = StringBuilder()
        for(i in tags.indices){
-         s = "$s,$i"
+         s.append(",$i")
        }
 
-       return s
+       return s.toString()
     }
 }

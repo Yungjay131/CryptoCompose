@@ -3,7 +3,7 @@ package com.slyworks.cryptocompose.di
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModelProvider
 import com.slyworks.cryptocompose.MViewModelFactory
-import com.slyworks.cryptocompose.ui.activities.details.DetailsActivityViewModel
+import com.slyworks.cryptocompose.ui.activities.details.DetailsViewModel
 import com.slyworks.cryptocompose.ui.activities.main.FavoritesViewModel
 import com.slyworks.cryptocompose.ui.activities.main.HomeViewModel
 import com.slyworks.cryptocompose.ui.activities.main.MainActivityViewModel
@@ -51,10 +51,10 @@ class ActivityModule {
     @Provides
     @ActivityScope
     fun provideDetailsViewModel(activity: ComponentActivity,
-                                dataManager: DataManager): DetailsActivityViewModel {
+                                dataManager: DataManager): DetailsViewModel {
         return ViewModelProvider(activity.viewModelStore,
             MViewModelFactory(dataManager))
-            .get(DetailsActivityViewModel::class.java)
+            .get(DetailsViewModel::class.java)
     }
 
     @Provides

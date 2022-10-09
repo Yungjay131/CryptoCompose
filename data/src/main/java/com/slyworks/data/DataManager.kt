@@ -45,14 +45,14 @@ constructor(private val mNetworkRegister:NetworkRegister,
         }
         .flatMap { it2:CryptoModelDetails? ->
             if(it2 == null)
-            /*means there was a error, or it probably doesn't exist*/
+            /* means there was a error, or it probably doesn't exist */
                 Observable.just(Outcome.FAILURE<String>(value = "crypto-currency not found"))
             else{
                 /*means it exist hence get associated data*/
                 val o:Observable<CryptoModel> =
                 mRepo2.getFavorites().toObservable()
                       .flatMap { it3:List<Int> ->
-                        mRepo1.getMultipleCryptoInfoMappedWithFavorites(query, it3)
+                        mRepo1.getMultipleCryptoInfoMappedWithFavorites(it2.id.toString(), it3)
                               .toObservable()
                               .map{ it4:List<CryptoModel> -> it4.first() }
                       }
@@ -62,6 +62,10 @@ constructor(private val mNetworkRegister:NetworkRegister,
                       Outcome.SUCCESS<CryptoModelCombo>(CryptoModelCombo(model = model, details = details))
                 }
             }
+        }
+        .onErrorReturn { e:Throwable ->
+            Timber.e(e, e.message)
+            Outcome.ERROR<Unit>(additionalInfo = e.message)
         }
 
     fun getData():Observable<Outcome>
@@ -109,6 +113,34 @@ constructor(private val mNetworkRegister:NetworkRegister,
     =  mRepo2.removeFromFavorites(*data)
 
     fun getFavorites():Observable<Outcome>
+    =  mRepo2.getFavorites()
+        .toObservable()
+        .flatMap flatMap1@{it2:List<Int> ->
+            if(it2.isNullOrEmpty()){
+                return@flatMap1 Observable.just(
+                    Outcome.FAILURE<Unit>(additionalInfo = "you have no favorites at the moment."+
+                            "Check the \"Favorite\" icon on an item to add it to your Favorites"))
+            }
+
+            val s:StringBuilder = StringBuilder()
+            for(i in it2.indices){
+                if(i != it2.size - 1)
+                    s.append("${it2[i]},")
+                else
+                    s.append("${it2[i]}")
+            }
+
+            mRepo1.getMultipleCryptoInfoMappedWithFavorites(s.toString(), it2)
+                .toObservable()
+                .switchMap { it3:List<CryptoModel> ->
+                    Observable.just(Outcome.SUCCESS<List<CryptoModel>>(value = it3, additionalInfo = "successful"))
+                }
+                .onErrorReturn{
+                    Outcome.FAILURE<Unit>(additionalInfo = it.message)
+                }
+        }
+
+    fun getFavorites3():Observable<Outcome>
     = Observable.just(mNetworkRegister.getNetworkStatus())
                 .flatMap { it:Boolean ->
                     if(!it){
@@ -137,41 +169,9 @@ constructor(private val mNetworkRegister:NetworkRegister,
                                     .switchMap { it3:List<CryptoModel> ->
                                         Observable.just(Outcome.SUCCESS<List<CryptoModel>>(value = it3, additionalInfo = "successful"))
                                     }
+
                             }
                     }
                 }
-
-    fun getFavorites2():Observable<Outcome>
-     = mNetworkRegister.subscribeToNetworkUpdates()
-          .switchMap { it ->
-              if(!it){
-                  Observable.just(Outcome.ERROR<Unit>(additionalInfo = "you are currently not connected to the internet."+
-                          " Please check your connection and try again"))
-              }else{
-                  mRepo2.getFavorites()
-                        .toObservable()
-                        .switchMap switchMap1@{it2:List<Int> ->
-                             if(it2.isNullOrEmpty()){
-                                 return@switchMap1 Observable.just(
-                                     Outcome.FAILURE<Unit>(additionalInfo = "you have no favorites at the moment."+
-                                         "Check the \"Favorite\" icon on an item to add it to your Favorites"))
-                             }
-
-                            val s:StringBuilder = StringBuilder()
-                            for(i in it2.indices){
-                                if(i != it2.size - 1)
-                                    s.append("${it2[i]},")
-                                else
-                                    s.append("${it2[i]}")
-                            }
-
-                           mRepo1.getMultipleCryptoInfoMappedWithFavorites(s.toString(), it2)
-                                 .toObservable()
-                                 .switchMap { it3:List<CryptoModel> ->
-                                     Observable.just(Outcome.SUCCESS<List<CryptoModel>>(value = it3, additionalInfo = "successful"))
-                                 }
-                        }
-              }
-          }
 
 }
