@@ -3,151 +3,199 @@ package com.slyworks.data
 import com.slyworks.models.CryptoModel
 import com.slyworks.models.CryptoModelCombo
 import com.slyworks.models.CryptoModelDetails
+import com.slyworks.models.Outcome
 import com.slyworks.network.NetworkRegister
 import com.slyworks.repository.ApiRepository
 import com.slyworks.repository.RealmRepository
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.functions.Function
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
 
 /**
- *Created by Joshua Sylvanus, 2:42 PM, 04-Jun-22.
+ * Created by Joshua Sylvanus, 2:42 PM, 04-Jun-22.
  */
-enum class SpecificCryptoSearchType{ DETAILS, SEARCH}
+enum class SpecificCryptoSearchType{ DETAILS, SEARCH }
 class DataManager
 constructor(private val mNetworkRegister:NetworkRegister,
             private val mRepo1: ApiRepository,
             private val mRepo2: RealmRepository){
-
+    //region Vars
     private val TAG: String? = DataManager::class.simpleName
+    //endregion
 
     fun getNetworkStatus():Boolean = mNetworkRegister.getNetworkStatus()
 
-    fun observeNetworkStatus():Observable<Boolean> =
-        Observable.merge(
-            Observable.just(mNetworkRegister.getNetworkStatus()),
-            mNetworkRegister.subscribeToNetworkUpdates())
+    fun observeNetworkStatus():Observable<Boolean>
+    = mNetworkRegister.subscribeToNetworkUpdates()
 
-    fun getSpecificCryptocurrency(query:String, type:SpecificCryptoSearchType ):Observable<CryptoModelCombo>
-    /*TODO:maybe use zip() here*/
-       = Observable.just(query)
-        .flatMap {
-            if (type == SpecificCryptoSearchType.SEARCH) {
-                mRepo1.getSpecificCryptoInfo(query)
-                    .toObservable()
-            } else {
-                mRepo1.getSpecificCryptoInfoForID(query)
-                    .toObservable()
+    fun getSpecificCryptocurrency(query: String,
+                                  type: SpecificCryptoSearchType):Observable<Outcome>
+    = Observable.just(query)
+        .flatMapSingle {
+            when(type){
+                SpecificCryptoSearchType.SEARCH -> mRepo1.getSpecificCryptoInfo(query)
+                SpecificCryptoSearchType.DETAILS -> mRepo1.getSpecificCryptoInfoForID(query)
             }
         }
-        .flatMap { c ->
-            if (c != null)
-            /*means there was a error, probably doesn't exist*/
-                Observable.just<CryptoModelCombo>(CryptoModelCombo.empty())
-            else {
+        .flatMap { it2:CryptoModelDetails? ->
+            if(it2 == null)
+            /*means there was a error, or it probably doesn't exist*/
+                Observable.just(Outcome.FAILURE<String>(value = "crypto-currency not found"))
+            else{
                 /*means it exist hence get associated data*/
-                Observable.combineLatest(
-                    Observable.just<CryptoModelDetails>(c),
-                    mRepo2.getFavorites()
-                        .toObservable()
-                        .flatMap { it: List<Int> ->
-                            mRepo1.getMultipleCryptoInfoMappedWithFavorites(query, it)
-                                .toObservable()
-                                .map { it2: List<CryptoModel> ->
-                                    it2.first()
-                                }
-                        },
-                    { details: CryptoModelDetails, model: CryptoModel ->
-                        CryptoModelCombo(
-                            model = model,
-                            details = details
-                        )
-                    }
-                )
-            }
-            }
+                val o:Observable<CryptoModel> =
+                mRepo2.getFavorites()
+                      .toObservable()
+                      .flatMapSingle { it3:List<Int> ->
+                        mRepo1.getMultipleCryptoInfoMappedWithFavorites(query, it3)
+                              .map{ it4:List<CryptoModel> -> it4.first() }
+                      }
 
+                return@flatMap o.zipWith(Observable.just<CryptoModelDetails>(it2))
+                { model: CryptoModel, details: CryptoModelDetails ->
+                      Outcome.SUCCESS<CryptoModelCombo>(CryptoModelCombo(model = model, details = details))
+                }
+            }
+        }
 
-    fun getData(): Observable<List<CryptoModel>>  =
-        mNetworkRegister.subscribeToNetworkUpdates()
-          .flatMap {
-                if(it) {
-                    /*make the network call every 10 minutes*/
-                    Observable.merge(
-                        Observable.just(0),
-                        Observable.interval(10, TimeUnit.MINUTES)
-                        )
-                        .flatMap { _ ->
-                            mRepo2.getFavorites()
-                                .toObservable()
-                                .flatMap { it2:List<Int> ->
+    fun getData():Observable<Outcome>
+    = Observable.just(mNetworkRegister.getNetworkStatus())
+                .flatMap {
+                    if(it){
+                          mRepo2.getFavorites()
+                                .flatMapObservable { it2: List<Int> ->
                                     mRepo1.getAllCryptoInfoMappedWithFavorites(it2)
                                         .toObservable()
-                                        .flatMap { l:List<CryptoModel> ->
-                                            mRepo2.saveData(l)
-                                                .andThen(Observable.just(l))
+                                        .flatMap { it3: List<CryptoModel> ->
+                                            mRepo2.saveData(it3)
+                                                  .andThen(
+                                                      Observable.just(Outcome.SUCCESS<List<CryptoModel>>(value = it3))
+                                                  )
                                         }
                                 }
+                                .repeatWhen{ it4:Observable<Any> ->
+                                   it4.flatMap { _:Any -> Observable.interval(2, TimeUnit.MINUTES) }
+                                      .repeatUntil{ !mNetworkRegister.getNetworkStatus() }
+                                }
+                    }else{
+                        mRepo2.getData()
+                            .flatMapObservable flatMap1@ { it4:List<CryptoModel> ->
+                                if(it4.isNullOrEmpty())
+                                    return@flatMap1 Observable.just(Outcome.FAILURE<String>(value = "you are currently not"+
+                                            " connected to the internet and have no data saved offline"))
 
-                        }
-                }else{
-                    mRepo2.getData()
-                          .toObservable()
+                                Observable.just(Outcome.SUCCESS(value = it4))
+                            }
+                    }
                 }
 
+    fun getData2():Observable<Outcome>{
+        return mNetworkRegister.subscribeToNetworkUpdates()
+            .switchMap {
+               if(it){
+                   Observable.interval(0, 5, TimeUnit.MINUTES)
+                       //.startWithItem(0)
+                       .switchMap {
+                           mRepo2.getFavorites()
+                                 .toObservable()
+                                 .switchMap { it2:List<Int> ->
+                                     mRepo1.getAllCryptoInfoMappedWithFavorites(it2)
+                                           .toObservable()
+                                           .flatMap { it3:List<CryptoModel> ->
+                                               mRepo2.saveData(it3)
+                                                     .andThen(
+                                                         Observable.just(Outcome.SUCCESS<List<CryptoModel>>(value = it3))
+                                                     )
+                                           }
+                                 }
+                       }
+               }else{
+                   mRepo2.getData()
+                       .toObservable()
+                       .flatMap { it4:List<CryptoModel> ->
+                           if(it4.isNullOrEmpty())
+                               return@flatMap Observable.just(Outcome.FAILURE<String>(value = "you are currently not"+
+                                       " connected to the internet and have no data saved offline"))
+
+                           Observable.just(Outcome.SUCCESS(value = it4))
+                       }
+               }
             }
-
-
-
+    }
 
     fun addToFavorites(vararg data:Int):Completable
     = mRepo2.addToFavorites(*data)
 
-
     fun removeFromFavorites(vararg data:Int):Completable
     =  mRepo2.removeFromFavorites(*data)
 
+    fun getFavorites():Observable<Outcome>
+    = Observable.just(mNetworkRegister.getNetworkStatus())
+                .flatMap { it:Boolean ->
+                    if(!it){
+                        Observable.just(Outcome.ERROR<Unit>(additionalInfo = "you are currently not connected to the internet."+
+                                " Please check your connection and try again"))
+                    }else{
+                        mRepo2.getFavorites()
+                            .toObservable()
+                            .flatMap flatMap1@{it2:List<Int> ->
+                                if(it2.isNullOrEmpty()){
+                                    return@flatMap1 Observable.just(
+                                        Outcome.FAILURE<Unit>(additionalInfo = "you have no favorites at the moment."+
+                                                "Check the \"Favorite\" icon on an item to add it to your Favorites"))
+                                }
 
-    fun getFavorites(): Observable<Triple<List<CryptoModel>,Int, String?>>
-    =  Observable.merge(
-                 Observable.just(mNetworkRegister.getNetworkStatus()),
-                 mNetworkRegister.subscribeToNetworkUpdates()
-              ).flatMap {
-                      if(!it)
-                         Observable.just(
-                             Triple(
-                             emptyList<CryptoModel>(), 1,"you are currently not connected to the internet."+
-                                     " Please check your connection and try again")
-                         )
-                      else
-                          mRepo2.getFavorites()
-                              .toObservable()
-                              .flatMap flatMap2@{ it2:List<Int> ->
-                                  if(it2.isNullOrEmpty())
-                                      return@flatMap2 Observable.just(
-                                          Triple(
-                                          emptyList<CryptoModel>() ,2,"you have no favorites at the moment."+
-                                          "Check the \"Favorite\" icon to add an item to your Favorites")
-                                      )
+                                val s:StringBuilder = StringBuilder()
+                                for(i in it2.indices){
+                                    if(i != it2.size - 1)
+                                        s.append("${it2[i]},")
+                                    else
+                                        s.append("${it2[i]}")
+                                }
 
+                                mRepo1.getMultipleCryptoInfoMappedWithFavorites(s.toString(), it2)
+                                    .toObservable()
+                                    .switchMap { it3:List<CryptoModel> ->
+                                        Observable.just(Outcome.SUCCESS<List<CryptoModel>>(value = it3, additionalInfo = "successful"))
+                                    }
+                            }
+                    }
+                }
 
-                                  val s:StringBuilder = StringBuilder()
-                                  for(i in it2.indices){
-                                      if(i != it2.size - 1)
-                                          s.append("$i,")
-                                      else
-                                          s.append("$i")
-                                  }
+    fun getFavorites2():Observable<Outcome>
+     = mNetworkRegister.subscribeToNetworkUpdates()
+          .switchMap { it ->
+              if(!it){
+                  Observable.just(Outcome.ERROR<Unit>(additionalInfo = "you are currently not connected to the internet."+
+                          " Please check your connection and try again"))
+              }else{
+                  mRepo2.getFavorites()
+                        .toObservable()
+                        .switchMap switchMap1@{it2:List<Int> ->
+                             if(it2.isNullOrEmpty()){
+                                 return@switchMap1 Observable.just(
+                                     Outcome.FAILURE<Unit>(additionalInfo = "you have no favorites at the moment."+
+                                         "Check the \"Favorite\" icon on an item to add it to your Favorites"))
+                             }
 
-                                  mRepo1.getMultipleCryptoInfoMappedWithFavorites(s.toString(), it2)
-                                      .toObservable()
-                                      .flatMap { it4:List<CryptoModel> ->
-                                          Observable.just(Triple(it4 ,3, "successful"))
-                                      }
-                              }
+                            val s:StringBuilder = StringBuilder()
+                            for(i in it2.indices){
+                                if(i != it2.size - 1)
+                                    s.append("${it2[i]},")
+                                else
+                                    s.append("${it2[i]}")
+                            }
 
+                           mRepo1.getMultipleCryptoInfoMappedWithFavorites(s.toString(), it2)
+                                 .toObservable()
+                                 .switchMap { it3:List<CryptoModel> ->
+                                     Observable.just(Outcome.SUCCESS<List<CryptoModel>>(value = it3, additionalInfo = "successful"))
+                                 }
+                        }
               }
-
+          }
 
 }

@@ -47,11 +47,11 @@ private constructor(private val value:Any? = null) {
         fun <T> SUCCESS(value: T? = null, additionalInfo:String? = null): Outcome {
             return Outcome(createSuccessClass(value, additionalInfo))
         }
-        fun <T> FAILURE(value: T? = null, reason:String? = null): Outcome {
-            return Outcome(createFailureClass(value, reason))
+        fun <T> FAILURE(value: T? = null, additionalInfo:String? = null): Outcome {
+            return Outcome(createFailureClass(value, additionalInfo))
         }
-        fun <T> ERROR(value: T? = null, error:String? = null) : Outcome {
-            return Outcome(createErrorClass(value, error))
+        fun <T> ERROR(value: T? = null, additionalInfo:String? = null) : Outcome {
+            return Outcome(createErrorClass(value, additionalInfo))
         }
 
         private fun <T> createSuccessClass(value:T, additionalInfo: String?):Any{

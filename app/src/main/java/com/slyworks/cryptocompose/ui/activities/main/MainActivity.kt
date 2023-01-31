@@ -73,9 +73,10 @@ class MainActivity : ComponentActivity() {
 
     @ExperimentalComposeUiApi
     override fun onCreate(savedInstanceState: Bundle?) {
+        initData()
+
         super.onCreate(savedInstanceState)
 
-        initData()
         initViews()
     }
 
@@ -173,8 +174,7 @@ fun MainActivity_Main(homeViewModel: HomeViewModel,
                                         icon = {
                                             Icon(
                                                 painter = painterResource(id = screen.icon),
-                                                contentDescription = null
-                                            )
+                                                contentDescription = null)
                                         },
                                         alwaysShowLabel = true
                                     )
@@ -186,8 +186,7 @@ fun MainActivity_Main(homeViewModel: HomeViewModel,
 
                     NavHost(
                         navController = navHostController,
-                        startDestination = MainActivityScreen.route_home
-                    ) {
+                        startDestination = MainActivityScreen.route_home) {
                         composable(MainActivityScreen.route_home) {
                             HomeMain(viewModel = homeViewModel)
                         }

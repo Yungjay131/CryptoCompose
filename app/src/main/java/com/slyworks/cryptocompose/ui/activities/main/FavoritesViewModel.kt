@@ -4,22 +4,22 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.slyworks.cryptocompose.IViewModel
+import com.slyworks.cryptocompose.plusAssign
 import com.slyworks.data.DataManager
 import com.slyworks.models.CryptoModel
 import com.slyworks.models.Outcome
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
-import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import timber.log.Timber
 
 
 /**
  *Created by Joshua Sylvanus, 4:04 AM, 16-Jun-22.
  */
-class FavoritesViewModel(private var dataManager:DataManager) : ViewModel(), IViewModel {
+class FavoritesViewModel(private val dataManager:DataManager) : ViewModel(), IViewModel {
     //region Vars
-    private val TAG: String? = FavoritesViewModel::class.simpleName
-
     private val _successState:MutableLiveData<Boolean> = MutableLiveData()
     val successState:LiveData<Boolean>
     get() = _successState
@@ -44,35 +44,41 @@ class FavoritesViewModel(private var dataManager:DataManager) : ViewModel(), IVi
     val errorData:LiveData<String>
     get() = _errorData
 
-    val progressState:MutableLiveData<Boolean> = MutableLiveData()
+    private val _progressState:MutableLiveData<Boolean> = MutableLiveData()
+    val progressState:LiveData<Boolean>
+    get() = _progressState
 
-    private val mSubscriptions = CompositeDisposable()
+    private val networkState:MutableLiveData<Boolean> = MutableLiveData()
+
+    private val disposables = CompositeDisposable()
     //endregion
 
     fun getFavorites(){
-       val d = dataManager.getFavorites()
+       disposables +=
+           dataManager.getFavorites()
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
-            .subscribe { it:Triple<List<CryptoModel>,Int ,String?> ->
-                /*using destructuring assignment, brings back JS memories...LOL*/
-                val (data, status, message) = it
+            .subscribe({ it:Outcome ->
+                _progressState.postValue(false)
 
-                when(status){
-                    1 ->{
-                        _noNetworkState.postValue(true)
-                    }
-                    2 ->{
-                        _errorData.postValue(message)
-                        _errorState.postValue(true)
-                    }
-                    3 ->{
-                        _successData.postValue(data)
+                when{
+                    it.isSuccess ->{
+                        _successData.postValue(it.getTypedValue<List<CryptoModel>>())
                         _successState.postValue(true)
                     }
+                    it.isFailure ->{
+                        _noNetworkState.postValue(true)
+                    }
+                    it.isError ->{
+                        _errorData.postValue(it.getAdditionalInfo())
+                        _errorState.postValue(true)
+                    }
                 }
-          }
-
-        mSubscriptions.add(d)
+          },{
+                Timber.e(it, "getFavorites: error occurred ${it.message}")
+                _errorData.postValue("an error occurred while processing your request")
+                _errorState.postValue(true)
+          })
     }
 
     override fun setItemFavoriteStatus(entity:Int, status:Boolean){
@@ -82,29 +88,33 @@ class FavoritesViewModel(private var dataManager:DataManager) : ViewModel(), IVi
             else
                 dataManager.removeFromFavorites(entity)
 
-        val d  = o.observeOn(Schedulers.io())
+        disposables +=
+          o.observeOn(Schedulers.io())
             .subscribeOn(Schedulers.io())
-            .subscribe()
+            .subscribe({},{
+                Timber.e(it, "setItemFavoritesStatue: error occurred ${it.message}")
+                _errorData.postValue("an error occurred while processing your request")
+                _errorState.postValue(true)
+            })
 
-        mSubscriptions.add(d)
     }
 
     override fun observeNetworkState(): LiveData<Boolean> {
-        val l:MutableLiveData<Boolean> = MutableLiveData()
-        val d = dataManager.observeNetworkStatus()
+        disposables +=
+            dataManager.observeNetworkStatus()
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
             .subscribe {
-                l.postValue(it)
+                networkState.postValue(it)
             }
 
-        mSubscriptions.add(d)
-
-        return l
+        return networkState
     }
 
     override fun onCleared() {
         super.onCleared()
-        mSubscriptions.clear()
+        unbind()
     }
+
+    fun unbind():Unit = disposables.clear()
 }

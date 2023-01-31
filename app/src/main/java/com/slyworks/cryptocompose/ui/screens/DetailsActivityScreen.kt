@@ -14,6 +14,5 @@ sealed class DetailsActivityScreen(val route:String,
     private object DetailsScreen: DetailsActivityScreen(
         route_details,
         R.string.details_screen,
-        R.drawable.ic_list
-    )
+        R.drawable.ic_list)
 }

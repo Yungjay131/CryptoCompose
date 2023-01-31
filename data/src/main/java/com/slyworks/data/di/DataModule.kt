@@ -44,12 +44,12 @@ object DataModule {
         @Binds
         @Named("network")
         @ApplicationScope
-        fun bindNetworkRepository(impl: ApiRepositoryImpl): Repository
+        fun bindNetworkRepository(impl: ApiRepositoryImpl): ApiRepository
 
         @Binds
         @Named("realm")
         @ApplicationScope
-        fun bindRealmRepository(impl: RealmRepositoryImpl): Repository
+        fun bindRealmRepository(impl: RealmRepositoryImpl): RealmRepository
 
     }
 }

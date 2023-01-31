@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.slyworks.cryptocompose.IViewModel
+import com.slyworks.cryptocompose.plusAssign
 import com.slyworks.data.DataManager
 import com.slyworks.data.SpecificCryptoSearchType
 import com.slyworks.models.CryptoModelCombo
@@ -17,49 +18,76 @@ import timber.log.Timber
 /**
  *Created by Joshua Sylvanus, 5:31 PM, 17-Jun-22.
  */
-class DetailsActivityViewModel(private var dataManager: DataManager) : ViewModel() , IViewModel {
+class DetailsActivityViewModel(private val dataManager: DataManager) : ViewModel() , IViewModel {
     //region Vars
     private val TAG: String? = DetailsActivityViewModel::class.simpleName
 
-    private val _detailsMessageLiveData:MutableLiveData<String> = MutableLiveData()
-    val detailsMessageLiveData: LiveData<String>
-    get() = _detailsMessageLiveData
+    private val _progressStateLiveData:MutableLiveData<Boolean> = MutableLiveData()
+    val progressStateLiveData:LiveData<Boolean>
+    get() = _progressStateLiveData
 
-    private val _detailsStateLiveData:MutableLiveData<Outcome> = MutableLiveData(Outcome.ERROR(null))
-    val detailsStateLiveData:LiveData<Outcome>
-    get() = _detailsStateLiveData
+    private val _networkStateLiveData:MutableLiveData<Boolean> = MutableLiveData()
+    val networkStateLiveData:LiveData<Boolean>
+    get() = _networkStateLiveData
 
-    private val _detailsDataLiveData:MutableLiveData<CryptoModelCombo> = MutableLiveData()
-    val detailsDataLiveData:LiveData<CryptoModelCombo>
-    get() = _detailsDataLiveData
+    private val _successDataLiveData:MutableLiveData<CryptoModelCombo> = MutableLiveData()
+    val successDataLiveData:LiveData<CryptoModelCombo>
+    get() = _successDataLiveData
 
-    private val mSubscriptions:CompositeDisposable = CompositeDisposable()
+    private val _successStateLiveData:MutableLiveData<Boolean> = MutableLiveData()
+    val successStateLiveData:LiveData<Boolean>
+    get() = _successStateLiveData
+
+    private val _failureDataLiveData:MutableLiveData<String> = MutableLiveData()
+    val failureDataLiveData:LiveData<String>
+    get() = _failureDataLiveData
+
+    private val _failureStateLiveData:MutableLiveData<Boolean> = MutableLiveData()
+    val failureStateLiveData:LiveData<Boolean>
+    get() = _failureStateLiveData
+
+    private val _errorDataLiveData:MutableLiveData<String> = MutableLiveData()
+    val errorDataLiveData:LiveData<String>
+    get() = _errorDataLiveData
+
+    private val _errorStateLiveData:MutableLiveData<Boolean> = MutableLiveData()
+    val errorStateLiveData:LiveData<Boolean>
+    get() = _errorStateLiveData
+
+    private val disposables:CompositeDisposable = CompositeDisposable()
     //endregion
 
     fun getData(query:String){
         if(!dataManager.getNetworkStatus()){
-            _detailsStateLiveData.postValue(
-                Outcome.FAILURE(value = 0, reason = "you are currently not connected to the internet")
-            )
+            _networkStateLiveData.setValue(false)
             return
         }
 
-        val d = dataManager.getSpecificCryptocurrency(query, SpecificCryptoSearchType.DETAILS)
+        _failureStateLiveData.setValue(false)
+        _successStateLiveData.setValue(false)
+        _networkStateLiveData.setValue(true)
+        _progressStateLiveData.setValue(true)
+
+        disposables +=
+        dataManager.getSpecificCryptocurrency(query, SpecificCryptoSearchType.DETAILS)
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
-            .subscribe({
-                if(it != null) {
-                    _detailsStateLiveData.postValue(Outcome.SUCCESS(null))
-                    _detailsDataLiveData.postValue(it)
-                }else{
-                    _detailsStateLiveData.postValue(Outcome.FAILURE(value = 1, reason="no results found for search query"))
-                }
-            },{
-                Timber.e("DetailsViewModel#getData: error occurred getting cryptoDetails")
-                _detailsStateLiveData.postValue(Outcome.FAILURE(value = 2,reason = "an error occurred while processing your request"))
-            })
+            .subscribe(
+            {
+              _progressStateLiveData.postValue(false)
 
-        mSubscriptions.add(d)
+              if(it.isSuccess){
+                 _successDataLiveData.postValue(it.getTypedValue<CryptoModelCombo>())
+                 _successStateLiveData.postValue(true)
+              }else if(it.isFailure){
+                  _failureDataLiveData.postValue(it.getTypedValue<String>())
+                  _failureStateLiveData.postValue(true)
+              }
+            },{
+               Timber.e("DetailsViewModel#getData: error occurred getting cryptoDetails")
+               _errorDataLiveData.postValue("error occurred getting crypto-currency Details")
+               _errorStateLiveData.postValue(true)
+            })
     }
 
     override fun setItemFavoriteStatus(entity: Int, status: Boolean) {
@@ -69,29 +97,33 @@ class DetailsActivityViewModel(private var dataManager: DataManager) : ViewModel
             else
                 dataManager.removeFromFavorites(entity)
 
-        val d  = o.observeOn(Schedulers.io())
+        disposables +=
+          o.observeOn(Schedulers.io())
             .subscribeOn(Schedulers.io())
-            .subscribe()
-
-        mSubscriptions.add(d)
+            .subscribe({},
+                {
+                    Timber.e("DetailsViewModel#getData: error occurred getting cryptoDetails")
+                    _errorDataLiveData.postValue("error occurred getting crypto-currency Details")
+                    _errorStateLiveData.postValue(true)
+                })
     }
 
     override fun observeNetworkState(): LiveData<Boolean> {
-        val l:MutableLiveData<Boolean> = MutableLiveData()
-        val d = dataManager.observeNetworkStatus()
+        disposables +=
+        dataManager.observeNetworkStatus()
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
             .subscribe {
-                l.postValue(it)
+                _networkStateLiveData.postValue(it)
             }
 
-        mSubscriptions.add(d)
-
-        return l
+        return networkStateLiveData
     }
 
     override fun onCleared() {
         super.onCleared()
-        mSubscriptions.clear()
+        unbind()
     }
+
+    fun unbind():Unit = disposables.clear()
 }

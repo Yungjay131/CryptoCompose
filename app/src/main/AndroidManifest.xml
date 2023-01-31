@@ -11,6 +11,15 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.splash">
         <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:label="@string/title_activity_login"
+            android:theme="@style/AppTheme.splash">
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="" />
+        </activity>
+        <activity
             android:name=".ui.activities.onboarding.OnboardingActivity"
             android:exported="false"
             android:label="@string/title_activity_onboarding"
@@ -40,8 +49,8 @@
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.CryptoCompose.NoActionBar" />
     </application>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
 </manifest>

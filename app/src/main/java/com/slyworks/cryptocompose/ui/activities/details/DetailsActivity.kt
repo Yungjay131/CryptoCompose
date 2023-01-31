@@ -59,10 +59,17 @@ class DetailsActivity : ComponentActivity() {
 
     @ExperimentalUnitApi
     override fun onCreate(savedInstanceState: Bundle?) {
+        initDI()
+
         super.onCreate(savedInstanceState)
 
         initData()
         initViews()
+    }
+
+    private fun initDI(){
+        //mEntity = intent.extras!!.getParcelable(EXTRA_ACTIVITY_DETAILS)!!
+        mId = intent.getExtra<Int>(EXTRA_ACTIVITY_DETAILS).toString()
     }
 
     private fun initData(){
@@ -71,9 +78,6 @@ class DetailsActivity : ComponentActivity() {
             .componentActivity(this)
             .build()
             .inject(this)
-
-        //mEntity = intent.extras!!.getParcelable(EXTRA_ACTIVITY_DETAILS)!!
-        mId = intent.getExtra<Int>(EXTRA_ACTIVITY_DETAILS).toString()
     }
 
     @ExperimentalUnitApi
@@ -81,6 +85,13 @@ class DetailsActivity : ComponentActivity() {
         setContent {
             DetailsActivity_Main(viewModel = detailsViewModel, mId)
         }
+    }
+
+    @ExperimentalUnitApi
+    override fun onBackPressed() {
+        super.onBackPressed()
+
+        navigateToMainScreen()
     }
 }
 
