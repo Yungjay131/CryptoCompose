@@ -21,7 +21,8 @@ import com.slyworks.cryptocompose.Navigator
 import com.slyworks.cryptocompose.Navigator.Companion.getExtra
 import com.slyworks.cryptocompose.appComp
 import com.slyworks.cryptocompose.ui.activities.main.MainActivity
-import com.slyworks.cryptocompose.ui.screens.*
+import com.slyworks.cryptocompose.ui.screens.details_activity.DetailMain
+import com.slyworks.cryptocompose.ui.screens.details_activity.DetailsActivityScreen
 import com.slyworks.cryptocompose.ui.theme.CryptoComposeTheme
 import com.slyworks.models.CryptoModel
 import kotlinx.coroutines.launch
@@ -30,7 +31,7 @@ import javax.inject.Inject
 class DetailsActivity : ComponentActivity() {
     //region Vars
     @Inject
-    lateinit var detailsViewModel: DetailsActivityViewModel
+    lateinit var detailsViewModel: DetailsViewModel
 
     private lateinit var mEntity:CryptoModel
     private lateinit var mId:String
@@ -57,7 +58,7 @@ class DetailsActivity : ComponentActivity() {
         _this = null
     }
 
-    @ExperimentalUnitApi
+    @OptIn(ExperimentalUnitApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         initDI()
 
@@ -87,7 +88,7 @@ class DetailsActivity : ComponentActivity() {
         }
     }
 
-    @ExperimentalUnitApi
+    @OptIn(ExperimentalUnitApi::class)
     override fun onBackPressed() {
         super.onBackPressed()
 
@@ -97,7 +98,7 @@ class DetailsActivity : ComponentActivity() {
 
 @ExperimentalUnitApi
 @Composable
-fun DetailsActivity_Main(viewModel:DetailsActivityViewModel, id:String){
+fun DetailsActivity_Main(viewModel:DetailsViewModel, id:String){
     CryptoComposeTheme {
         val scaffoldState = rememberScaffoldState()
         val scope = rememberCoroutineScope()
@@ -126,8 +127,7 @@ fun DetailsActivity_Main(viewModel:DetailsActivityViewModel, id:String){
         ){
             NavHost(
                 navController = navHostController,
-                startDestination = DetailsActivityScreen.route_details
-            ){
+                startDestination = DetailsActivityScreen.route_details){
                 composable(DetailsActivityScreen.route_details){
                     DetailMain(viewModel = viewModel, id)
                 }

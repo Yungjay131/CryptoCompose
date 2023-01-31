@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.slyworks.cryptocompose.IViewModel
+import com.slyworks.cryptocompose.plusAssign
 import com.slyworks.data.DataManager
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -16,6 +17,7 @@ class MainActivityViewModel(private var dataManager: DataManager):ViewModel(), I
     //region Vars
     private val TAG: String? = MainActivityViewModel::class.simpleName
 
+    private val networkLiveData:MutableLiveData<Boolean> = MutableLiveData()
     private val mSubscriptions:CompositeDisposable = CompositeDisposable()
     //endregion
 
@@ -23,17 +25,15 @@ class MainActivityViewModel(private var dataManager: DataManager):ViewModel(), I
         throw UnsupportedOperationException("this op is not supported for this ViewModel")
 
     override fun observeNetworkState(): LiveData<Boolean> {
-        val l: MutableLiveData<Boolean> = MutableLiveData()
-        val d = dataManager.observeNetworkStatus()
+        mSubscriptions +=
+        dataManager.observeNetworkStatus()
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
             .subscribe {
-                l.postValue(it)
+                networkLiveData.postValue(it)
             }
 
-        mSubscriptions.add(d)
-
-        return l
+        return networkLiveData
     }
 
     override fun onCleared() {

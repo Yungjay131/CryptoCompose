@@ -6,11 +6,9 @@ import com.slyworks.models.CryptoModelDetails
 import com.slyworks.models.Outcome
 import com.slyworks.network.NetworkRegister
 import com.slyworks.repository.ApiRepository
-import com.slyworks.repository.RealmRepository
+import com.slyworks.repository.DBRepository
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.functions.Function
-import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
 
@@ -21,7 +19,7 @@ enum class SpecificCryptoSearchType{ DETAILS, SEARCH }
 class DataManager
 constructor(private val mNetworkRegister:NetworkRegister,
             private val mRepo1: ApiRepository,
-            private val mRepo2: RealmRepository){
+            private val mRepo2: DBRepository){
     //region Vars
     private val TAG: String? = DataManager::class.simpleName
     //endregion

@@ -53,26 +53,32 @@ class FavoritesViewModel(private val dataManager:DataManager) : ViewModel(), IVi
     private val disposables = CompositeDisposable()
     //endregion
 
-    fun getFavorites(){
-       disposables +=
-           dataManager.getFavorites()
-            .subscribeOn(Schedulers.io())
-            .observeOn(Schedulers.io())
-            .subscribe({ it:Outcome ->
-                _progressState.postValue(false)
-
-                when{
-                    it.isSuccess ->{
-                        _successData.postValue(it.getTypedValue<List<CryptoModel>>())
-                        _successState.postValue(true)
-                    }
-                    it.isFailure ->{
+    fun getFavorites() {
+        disposables +=
+            Observable.just(dataManager.getNetworkStatus())
+                .filter { it: Boolean ->
+                    if (!it) {
+                        _progressState.postValue(false)
                         _noNetworkState.postValue(true)
                     }
-                    it.isError ->{
-                        _errorData.postValue(it.getAdditionalInfo())
-                        _errorState.postValue(true)
-                    }
+
+                    it
+                }
+                .flatMap { dataManager.getFavorites() }
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .subscribe({ it: Outcome ->
+                    _progressState.postValue(false)
+
+                    when {
+                        it.isSuccess -> {
+                            _successData.postValue(it.getTypedValue<List<CryptoModel>>())
+                            _successState.postValue(true)
+                        }
+                        it.isError || it.isFailure -> {
+                            _errorData.postValue(it.getAdditionalInfo())
+                            _errorState.postValue(true)
+                        }
                 }
           },{
                 Timber.e(it, "getFavorites: error occurred ${it.message}")

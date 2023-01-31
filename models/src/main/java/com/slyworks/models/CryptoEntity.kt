@@ -5,7 +5,7 @@ import kotlinx.parcelize.Parcelize
 
 
 /**
- *Created by Joshua Sylvanus, 10:27 PM, 8/19/2021.
+ * Created by Joshua Sylvanus, 10:27 PM, 19/8/2021.
  */
 @Parcelize
 data class CryptoEntity(

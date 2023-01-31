@@ -1,11 +1,12 @@
 package com.slyworks.realm.di
 
 import com.slyworks.di.ApplicationScope
-import com.slyworks.realm.RealmRepositoryImpl
-import com.slyworks.repository.RealmRepository
+import com.slyworks.realm.RealmDBRepositoryImpl
+import com.slyworks.repository.DBRepository
 import dagger.Module
 import dagger.Provides
 import io.realm.RealmConfiguration
+import javax.inject.Named
 
 
 /**
@@ -16,7 +17,8 @@ object RealmModule {
 
     @Provides
     @ApplicationScope
-    fun provideRealmRepository(config: RealmConfiguration):RealmRepository{
-        return RealmRepositoryImpl(config)
+    @Named("realm_db_repository_impl")
+    fun provideRealmDBRepository(config: RealmConfiguration):DBRepository{
+        return RealmDBRepositoryImpl(config)
     }
 }

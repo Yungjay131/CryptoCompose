@@ -94,17 +94,16 @@ class HomeViewModel(private val dataManager: DataManager) : ViewModel(), IViewMo
 
     override fun observeNetworkState(): LiveData<Boolean> {
         val l:MutableLiveData<Boolean> = MutableLiveData()
+        val filureFunc:(e:Throwable) -> Unit = {
+            Timber.e(it, "observeNetworkStatus: error occurred  ${it.message}")
+            _failureDataLiveData.postValue("an error occurred while processing your request")
+        }
+
         disposables +=
             dataManager.observeNetworkStatus()
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
-            .subscribe({
-                l.postValue(it)
-            },
-            {
-                Timber.e(it,"observeNetworkStatus: error occurred  ${it.message}")
-                _failureDataLiveData.postValue("an error occurred while processing your request")
-            })
+            .subscribe(l::postValue, filureFunc)
         return l
     }
 
@@ -113,5 +112,9 @@ class HomeViewModel(private val dataManager: DataManager) : ViewModel(), IViewMo
         unbind()
     }
 
-    fun unbind():Unit = disposables.clear()
+    fun unbind():Unit {
+        _successStateLiveData.postValue(false)
+        _progressStateLiveData.postValue(true)
+        disposables.clear()
+    }
 }
