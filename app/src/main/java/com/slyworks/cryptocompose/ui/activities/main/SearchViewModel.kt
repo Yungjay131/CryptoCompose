@@ -113,6 +113,8 @@ class SearchViewModel(private var dataManager: DataManager) : ViewModel(), IView
 
     }
 
+    fun resetState(){}
+
     override fun setItemFavoriteStatus(entity:Int,status:Boolean){
        disposables +=
            (if (status)

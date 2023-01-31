@@ -25,7 +25,6 @@ import com.slyworks.models.CryptoModel
 fun FavoriteMain(viewModel: FavoritesViewModel){
     val successData:State<List<CryptoModel>?> = viewModel.successData.observeAsState()
     val successState:State<Boolean> = viewModel.successState.observeAsState(initial = false)
-    val noDataState:State<Boolean> = viewModel.noDataState.observeAsState(initial = false)
     val noNetworkState:State<Boolean> = viewModel.noNetworkState.observeAsState(initial = false)
     val errorData:State<String?> = viewModel.errorData.observeAsState()
     val errorState:State<Boolean> = viewModel.errorState.observeAsState(initial = false)
@@ -58,10 +57,6 @@ fun FavoriteMain(viewModel: FavoritesViewModel){
         successState.value -> FavoritesList(viewModel = viewModel, items = successData.value!!)
         noNetworkState.value -> NoInternetComposable()
         errorState.value -> ErrorComposable(text = errorData.value!!)
-        noDataState.value ->
-            ErrorComposable(text = "you have no favorites at the moment."+
-                    "Check the \"Favorite\" icon to add an item to your Favorites")
-
     }
 
 }

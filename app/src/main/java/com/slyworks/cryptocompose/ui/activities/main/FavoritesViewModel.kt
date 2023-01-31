@@ -76,7 +76,7 @@ class FavoritesViewModel(private val dataManager:DataManager) : ViewModel(), IVi
                             _successData.postValue(it.getTypedValue<List<CryptoModel>>())
                             _successState.postValue(true)
                         }
-                        it.isError -> {
+                        it.isError || it.isFailure -> {
                             _errorData.postValue(it.getAdditionalInfo())
                             _errorState.postValue(true)
                         }

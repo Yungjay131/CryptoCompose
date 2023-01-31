@@ -81,6 +81,9 @@ fun SearchMain(viewModel: SearchViewModel){
     /*if(latestLifecycleEvent.value == Lifecycle.Event.ON_CREATE)
         remember("KEY"){ mutableStateOf(viewModel.initSearch()) }*/
 
+   /* if(latestLifecycleEvent.value == Lifecycle.Event.ON_CREATE)
+        remember("KEY"){ mutableStateOf(viewModel.resetState()) }
+*/
     if(latestLifecycleEvent.value == Lifecycle.Event.ON_DESTROY)
         remember("KEY"){ mutableStateOf(viewModel.unbind()) }
 
